@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using StardewValley.Menus;
+using StardewModdingAPI.Utilities;
 
 /*
 For future update ideas:
@@ -34,6 +35,7 @@ Current goal:
         tillable area : ???
     Add configuration file : OK
     Add GMCM Support : OK
+    Tax based on season : 
  */
 
 namespace Progressive_Tax
@@ -62,6 +64,13 @@ namespace Progressive_Tax
             public float AnimalTaxValue { get; set; } = 0.001f;  // Default: 0.1%
             public float MaxYearlyTax { get; set; } = 0.1f;      // Default: 10%
             public float YearlyTaxValue { get; set; } = 0.005f;  // Default: 0.5%
+            public void ResetToDefaults()
+            {
+                BuildingTaxValue = 0.01f;
+                AnimalTaxValue = 0.001f;
+                MaxYearlyTax = 0.1f;
+                YearlyTaxValue = 0.005f;
+            }
         }
 
         public override void Entry(IModHelper helper)
@@ -84,73 +93,8 @@ namespace Progressive_Tax
 
         private void GameLaunched(object sender, GameLaunchedEventArgs e)
         {
-            var configMenu = this.Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
-            if (configMenu is null)
-                return;
-
-            // register mod
-            configMenu.Register(
-                mod: this.ModManifest,
-                reset: () => this.config = new ModConfig(),
-                save: () => this.Helper.WriteConfig(this.config)
-            );
-
-            // for building
-            configMenu.SetTitleScreenOnlyForNextOptions(ModManifest, true);
-            configMenu.AddNumberOption(
-                mod: ModManifest,
-                getValue: () => config.BuildingTaxValue, // Getter for the current value
-                setValue: value => config.BuildingTaxValue = value, // Setter for the value
-                name: () => "Building Tax Rate", // Name displayed in the menu
-                tooltip: () => "Adjust the tax rate applied per building.\n(Default: 0.1%)", // Tooltip for the option
-                min: 0f, // Minimum value
-                max: 0.1f, // Maximum value
-                interval: 0.005f, // Step size
-                formatValue: value => $"{value * 100:F1}%" // Format the value as a percentage (e.g., "1.0%")
-            );
-
-            //for animals
-            configMenu.SetTitleScreenOnlyForNextOptions(ModManifest, true);
-            configMenu.AddNumberOption(
-                mod: ModManifest,
-                getValue: () => config.AnimalTaxValue, // Getter for the current value
-                setValue: value => config.AnimalTaxValue = value, // Setter for the value
-                name: () => "Animal Tax Rate", // Name displayed in the menu
-                tooltip: () => "Adjust the tax rate applied per animal.\n(Default: 0.5%)", // Tooltip for the option
-                min: 0f, // Minimum value
-                max: 0.1f, // Maximum value
-                interval: 0.005f, // Step size
-                formatValue: value => $"{value * 100:F1}%" // Format the value as a percentage (e.g., "1.0%")
-            );
-
-            // for yearly
-            configMenu.SetTitleScreenOnlyForNextOptions(ModManifest, true);
-            configMenu.AddNumberOption(
-                mod: ModManifest,
-                getValue: () => config.YearlyTaxValue, // Getter for the current value
-                setValue: value => config.YearlyTaxValue = value, // Setter for the value
-                name: () => "Yearly Tax Rate", // Name displayed in the menu
-                tooltip: () => "Adjust the tax rate applied per year.\n(Default: 1%)", // Tooltip for the option
-                min: 0f, // Minimum value
-                max: 0.1f, // Maximum value
-                interval: 0.005f, // Step size
-                formatValue: value => $"{value * 100:F1}%" // Format the value as a percentage (e.g., "1.0%")
-            );
-
-            // for max yearly tax
-            configMenu.SetTitleScreenOnlyForNextOptions(ModManifest, true);
-            configMenu.AddNumberOption(
-                mod: ModManifest,
-                getValue: () => config.MaxYearlyTax, // Getter for the current value
-                setValue: value => config.MaxYearlyTax = value, // Setter for the value
-                name: () => "Max Yearly Tax Rate", // Name displayed in the menu
-                tooltip: () => "Adjust the tax rate maximum yearly tax rate.\n(Default: 1%)", // Tooltip for the option
-                min: 0f, // Minimum value
-                max: 0.2f, // Maximum value
-                interval: 0.005f, // Step size
-                formatValue: value => $"{value * 100:F1}%" // Format the value as a percentage (e.g., "1.0%")
-            );
-
+            var configMenuHandler = new ConfigMenuHandler(config, Helper, ModManifest);
+            configMenuHandler.RegisterMenu();
         }
 
         private void OnDayEnding(object? sender, DayEndingEventArgs e)
@@ -162,7 +106,7 @@ namespace Progressive_Tax
                 ApplyTaxToShippingBin(shippingBin);
             } else
             {
-                Monitor.Log
+                Monitor.Log("You have no items in the shipping bin", LogLevel.Info);
             }
         }
 
@@ -281,6 +225,12 @@ namespace Progressive_Tax
             }
 
             return (tillableCount, untillableCount, totalArea);
+        }
+        public SDate getCurrentDate()
+        {
+            var date = SDate.From(Game1.Date);
+            Monitor.Log($"{ date.ToLocaleString(withYear: false)}", LogLevel.Debug);
+            return date;
         }
     }
 }
