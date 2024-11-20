@@ -1,5 +1,4 @@
 ﻿using System;
-using GenericModConfigMenu;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
@@ -167,7 +166,7 @@ namespace GenericModConfigMenu
 
         /// <summary>Open the config UI for a specific mod, as a child menu if there is an existing menu.</summary>
         /// <param name="mod">The mod's manifest.</param>
-        void OpenModMenuAsChildMenu(IManifest mod);
+        //void OpenModMenuAsChildMenu(IManifest mod);
 
         /// <summary>Get the currently-displayed mod config menu, if any.</summary>
         /// <param name="mod">The manifest of the mod whose config menu is being shown, or <c>null</c> if not applicable.</param>

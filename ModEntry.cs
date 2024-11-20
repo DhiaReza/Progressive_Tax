@@ -68,18 +68,70 @@ namespace Progressive_Tax
             this.Helper.Events.GameLoop.GameLaunched += this.GameLaunched;
         }
 
-        private void GameLaunched(object? sender, GameLaunchedEventArgs e)
+        private void GameLaunched(object sender, GameLaunchedEventArgs e)
         {
-            var api = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
-            if (api == null)
-            {
+            var configMenu = this.Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
+            if (configMenu is null)
                 return;
-            }
-            config = Helper.ReadConfig<ModConfig>();
-            api.Register(ModManifest, reset: () => config = new ModConfig(), save: () => Helper.WriteConfig<ModConfig>(config));
-            api.AddSectionTitle(ModManifest, 
-                text: () => "Building Tax Rate",
-                tooltip: () => "A Progressive Tax Mod Config Menu");
+
+            // register mod
+            configMenu.Register(
+                mod: this.ModManifest,
+                reset: () => this.config = new ModConfig(),
+                save: () => this.Helper.WriteConfig(this.config)
+            );
+
+            // for building
+            configMenu.AddNumberOption(
+                mod: ModManifest,
+                getValue: () => config.BuildingTaxValue, // Getter for the current value
+                setValue: value => config.BuildingTaxValue = value, // Setter for the value
+                name: () => "Building Tax Rate", // Name displayed in the menu
+                tooltip: () => "Adjust the tax rate applied per building.\n(Default: 0.1%)", // Tooltip for the option
+                min: 0f, // Minimum value
+                max: 0.1f, // Maximum value
+                interval: 0.01f, // Step size
+                formatValue: value => $"{value * 100:F1}%" // Format the value as a percentage (e.g., "1.0%")
+            );
+
+            //for animals
+            configMenu.AddNumberOption(
+                mod: ModManifest,
+                getValue: () => config.AnimalTaxValue, // Getter for the current value
+                setValue: value => config.AnimalTaxValue = value, // Setter for the value
+                name: () => "Animal Tax Rate", // Name displayed in the menu
+                tooltip: () => "Adjust the tax rate applied per animal.\n(Default: 0.5%)", // Tooltip for the option
+                min: 0f, // Minimum value
+                max: 0.1f, // Maximum value
+                interval: 0.01f, // Step size
+                formatValue: value => $"{value * 100:F1}%" // Format the value as a percentage (e.g., "1.0%")
+            );
+
+            // for yearly
+            configMenu.AddNumberOption(
+                mod: ModManifest,
+                getValue: () => config.YearlyTaxValue, // Getter for the current value
+                setValue: value => config.YearlyTaxValue = value, // Setter for the value
+                name: () => "Yearly Tax Rate", // Name displayed in the menu
+                tooltip: () => "Adjust the tax rate applied per year.\n(Default: 1%)", // Tooltip for the option
+                min: 0f, // Minimum value
+                max: 0.1f, // Maximum value
+                interval: 0.01f, // Step size
+                formatValue: value => $"{value * 100:F1}%" // Format the value as a percentage (e.g., "1.0%")
+            );
+
+            // for max yearly tax
+            configMenu.AddNumberOption(
+                mod: ModManifest,
+                getValue: () => config.MaxYearlyTax, // Getter for the current value
+                setValue: value => config.MaxYearlyTax = value, // Setter for the value
+                name: () => "Max Yearly Tax Rate", // Name displayed in the menu
+                tooltip: () => "Adjust the tax rate maximum yearly tax rate.\n(Default: 1%)", // Tooltip for the option
+                min: 0f, // Minimum value
+                max: 0.2f, // Maximum value
+                interval: 0.005f, // Step size
+                formatValue: value => $"{value * 100:F1}%" // Format the value as a percentage (e.g., "1.0%")
+            );
 
         }
 
