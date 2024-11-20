@@ -1,30 +1,32 @@
-﻿using StardewModdingAPI;
+﻿using GenericModConfigMenu;
+using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.Objects;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
+// newest
 /*
 For future update ideas:
 
-Progressive Tax System
-    Introduce a tax rate that increases with the player's wealth or income. 
-        This adds realism and makes the game progressively challenging as the player becomes more successful.
+Progressive Tax System 
     Add tax deductions or breaks for certain expenses or charitable actions (like donating to the community center).
 
 Monthly Tax Statements
     Provide players with a breakdown of their taxes at the end of each in-game month. This could include:
+        Revenue Breakdown: How much was taxed from different categories (e.g., crops, artisan goods, animal products).
+        Expenses: Taxable deductions based on upgrades, maintenance costs for buildings, or animal care.
 
 Dynamic Tax Rates
     Make tax rates depend on in-game factors:
-        Seasonal Variations: Higher taxes in winter when productivity is lower.
-        Event-Based Changes: Tax changes tied to festivals, elections, or disasters.
+        Seasonal Variations: Lower taxes in winter when productivity is lower.
         Local Governance: Allow players to influence the rates by befriending certain NPCs (e.g., Lewis).
 
 Current goal:
-    Add configuration file
+    Introduce a tax rate that increases with the player's wealth or income. : OK (through building, animals, and current year)
+    Add configuration file : OK
+    Add GMCM Support
  */
 
 namespace Progressive_Tax
@@ -32,7 +34,7 @@ namespace Progressive_Tax
     public class TaxMod : Mod
     {
 
-        private TaxConfig? config;
+        private ModConfig? config;
         // Get Player Data
         int buildingCount => Game1.getFarm().buildings.Count;
         int animalCount => Game1.getFarm().getAllFarmAnimals().Count();
@@ -40,7 +42,7 @@ namespace Progressive_Tax
         private int currentYear => Game1.year;
 
         // Tax Rates
-        public class TaxConfig
+        public sealed class ModConfig
         {
             public float BuildingTaxValue { get; set; } = 0.01f; // Default: 1%
             public float AnimalTaxValue { get; set; } = 0.001f;  // Default: 0.1%
@@ -51,7 +53,7 @@ namespace Progressive_Tax
         public override void Entry(IModHelper helper)
         {
             // Load configuration from the JSON file
-            config = helper.ReadConfig<TaxConfig>();
+            config = helper.ReadConfig<ModConfig>();
 
             // Log the loaded values for debugging
             Monitor.Log($"BuildingTaxValue: {config.BuildingTaxValue}", LogLevel.Info);
@@ -61,6 +63,24 @@ namespace Progressive_Tax
 
             // Hook into the item shipping event
             helper.Events.GameLoop.DayEnding += this.OnDayEnding;
+
+            // Starts GMCM
+            this.Helper.Events.GameLoop.GameLaunched += this.GameLaunched;
+        }
+
+        private void GameLaunched(object? sender, GameLaunchedEventArgs e)
+        {
+            var api = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
+            if (api == null)
+            {
+                return;
+            }
+            config = Helper.ReadConfig<ModConfig>();
+            api.Register(ModManifest, reset: () => config = new ModConfig(), save: () => Helper.WriteConfig<ModConfig>(config));
+            api.AddSectionTitle(ModManifest, 
+                text: () => "Building Tax Rate",
+                tooltip: () => "A Progressive Tax Mod Config Menu");
+
         }
 
         private void OnDayEnding(object? sender, DayEndingEventArgs e)
@@ -104,12 +124,23 @@ namespace Progressive_Tax
             }
 
             float buildingTax = buildingCount * config.BuildingTaxValue;
+            Monitor.Log($"Building Tax : {buildingTax}");
             float animalTax = animalCount * config.AnimalTaxValue;
+            Monitor.Log($"Animal Tax : {animalTax}");
             float yearTax = currentYear * config.YearlyTaxValue;
+            if (yearTax > config.MaxYearlyTax)
+            {
+                yearTax = config.MaxYearlyTax;
+            }
+            Monitor.Log($"Yearly Tax : {yearTax}");
 
             // Ensure the tax does not exceed the maximum allowed
             float totalTax = buildingTax + animalTax + yearTax;
-            return totalTax > config.MaxYearlyTax ? config.MaxYearlyTax : totalTax;
+            if (totalTax > 1)
+            {
+                totalTax = 1;
+            }
+            return totalTax;
         }
 
         // Debug stuff
