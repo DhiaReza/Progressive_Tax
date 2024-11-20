@@ -1,12 +1,15 @@
 ﻿using GenericModConfigMenu;
+using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.Objects;
+using StardewValley.TerrainFeatures;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-// newest
+using StardewValley.Menus;
+
 /*
 For future update ideas:
 
@@ -24,7 +27,11 @@ Dynamic Tax Rates
         Local Governance: Allow players to influence the rates by befriending certain NPCs (e.g., Lewis).
 
 Current goal:
-    Introduce a tax rate that increases with the player's wealth or income. : OK (through building, animals, and current year)
+    Introduce a tax rate that increases with the player's wealth or income. :
+        building : OK
+        animals : OK
+        current year : OK
+        tillable area : ???
     Add configuration file : OK
     Add GMCM Support : OK
  */
@@ -40,6 +47,13 @@ namespace Progressive_Tax
         int animalCount => Game1.getFarm().getAllFarmAnimals().Count();
         private IList<Item> shippingBin => Game1.getFarm().getShippingBin(Game1.player);
         private int currentYear => Game1.year;
+
+        private float _CurrentTaxRate;
+        public float CurrentTaxRate
+        {
+            get => _CurrentTaxRate;
+            private set => _CurrentTaxRate = value;
+        }
 
         // Tax Rates
         public sealed class ModConfig
@@ -82,6 +96,7 @@ namespace Progressive_Tax
             );
 
             // for building
+            configMenu.SetTitleScreenOnlyForNextOptions(ModManifest, true);
             configMenu.AddNumberOption(
                 mod: ModManifest,
                 getValue: () => config.BuildingTaxValue, // Getter for the current value
@@ -95,6 +110,7 @@ namespace Progressive_Tax
             );
 
             //for animals
+            configMenu.SetTitleScreenOnlyForNextOptions(ModManifest, true);
             configMenu.AddNumberOption(
                 mod: ModManifest,
                 getValue: () => config.AnimalTaxValue, // Getter for the current value
@@ -108,6 +124,7 @@ namespace Progressive_Tax
             );
 
             // for yearly
+            configMenu.SetTitleScreenOnlyForNextOptions(ModManifest, true);
             configMenu.AddNumberOption(
                 mod: ModManifest,
                 getValue: () => config.YearlyTaxValue, // Getter for the current value
@@ -121,6 +138,7 @@ namespace Progressive_Tax
             );
 
             // for max yearly tax
+            configMenu.SetTitleScreenOnlyForNextOptions(ModManifest, true);
             configMenu.AddNumberOption(
                 mod: ModManifest,
                 getValue: () => config.MaxYearlyTax, // Getter for the current value
@@ -138,10 +156,13 @@ namespace Progressive_Tax
         private void OnDayEnding(object? sender, DayEndingEventArgs e)
         {
             // Check if the shipping bin contains items
-            Monitor.Log(ShippingBinToString(), LogLevel.Info);
             if (shippingBin.Count > 0)
             {
+                Monitor.Log(ShippingBinToString(), LogLevel.Info);
                 ApplyTaxToShippingBin(shippingBin);
+            } else
+            {
+                Monitor.Log
             }
         }
 
@@ -192,6 +213,9 @@ namespace Progressive_Tax
             {
                 totalTax = 1;
             }
+
+            _CurrentTaxRate = totalTax;
+
             return totalTax;
         }
 
@@ -223,6 +247,40 @@ namespace Progressive_Tax
             }
 
             return logBuilder.ToString();
+        }
+
+        // to be used
+        public (int tillableCount, int untillableCount, int TotalArea) GetFarmTileCounts()
+        {
+            int tillableCount = 0;
+            int untillableCount = 0;
+            int totalArea = 0;
+
+            // Get the farm object
+            Farm farm = Game1.getFarm();
+
+            // Iterate through the tiles of the farm
+            for (int x = 0; x < farm.Map.DisplayWidth / 64; x++) // Tile width
+            {
+                for (int y = 0; y < farm.Map.DisplayHeight / 64; y++) // Tile height
+                {
+                    Vector2 tile = new Vector2(x, y);
+
+                    // Check if the tile is tillable
+                    if (farm.doesTileHaveProperty(x, y, "Diggable", "Back") != null ||
+                        (farm.terrainFeatures.ContainsKey(tile) && farm.terrainFeatures[tile] is HoeDirt))
+                    {
+                        tillableCount++;
+                    }
+                    else
+                    {
+                        untillableCount++;
+                    }
+                    totalArea++;
+                }
+            }
+
+            return (tillableCount, untillableCount, totalArea);
         }
     }
 }
