@@ -1,0 +1,72 @@
+[11:39:35 INFO  SMAPI] SMAPI 4.1.7 with Stardew Valley 1.6.14 build 24317 on Microsoft Windows 11 Home Single Language
+[11:39:35 INFO  SMAPI] Mods go here: C:\Program Files (x86)\Steam\steamapps\common\Stardew Valley\Mods
+[11:39:35 TRACE SMAPI] Log started at 2024-11-20T04:39:35 UTC
+[11:39:40 INFO  SMAPI] You enabled developer mode, so the console will be much more verbose. You can disable it by installing the non-developer version of SMAPI.
+[11:39:40 DEBUG SMAPI] Waiting for game to launch...
+[11:39:41 DEBUG SMAPI] Loading mod metadata...
+[11:39:41 TRACE SMAPI]   Ignored loose files: vortex.deployment.json
+[11:39:41 DEBUG SMAPI] Loading mods...
+[11:39:41 TRACE SMAPI]    CJB Item Spawner (from Mods\CJBItemSpawner\CJBItemSpawner.dll, ID: CJBok.ItemSpawner, assembly version: 2.5.1)...
+[11:39:41 TRACE SMAPI]    Generic Mod Config Menu (from Mods\GenericModConfigMenu\GenericModConfigMenu.dll, ID: spacechase0.GenericModConfigMenu, assembly version: 1.14.0)...
+[11:39:41 TRACE SMAPI]       Detected direct console access (System.Console type) in assembly GenericModConfigMenu.dll.
+[11:39:41 TRACE SMAPI]    Progressive Tax (from Mods\Progressive_Tax\Progressive_Tax.dll, ID: SatriaCahaya.Progressive_Tax, assembly version: 1.0.0)...
+[11:39:41 INFO  SMAPI] Loaded 3 mods:
+[11:39:41 INFO  SMAPI]    CJB Item Spawner 2.5.1 by CJBok and Pathoschild | Simple in-game item spawner!
+[11:39:41 INFO  SMAPI]    Generic Mod Config Menu 1.14.0 by spacechase0 | Adds an in-game UI to edit other mods' config options (for mods which support it).
+[11:39:41 INFO  SMAPI]    Progressive Tax 1.0.0 by SatriaCahaya | A mod to reduce items price sold through a shipping bin according to player's wealth'
+
+[11:39:41 TRACE SMAPI]    Direct console access
+[11:39:41 TRACE SMAPI]    --------------------------------------------------
+[11:39:41 TRACE SMAPI]       These mods access the SMAPI console window directly. This is more fragile, and their output may not
+[11:39:41 TRACE SMAPI]       be logged by SMAPI.
+
+[11:39:41 TRACE SMAPI]       - Generic Mod Config Menu
+
+[11:39:41 DEBUG SMAPI]    No update keys
+[11:39:41 DEBUG SMAPI]    --------------------------------------------------
+[11:39:41 DEBUG SMAPI]       These mods have no update keys in their manifest. SMAPI may not notify you about updates for these
+[11:39:41 DEBUG SMAPI]       mods. Consider notifying the mod authors about this problem.
+
+[11:39:41 DEBUG SMAPI]       - Progressive Tax
+
+[11:39:41 DEBUG SMAPI] Launching mods...
+[11:39:41 TRACE CJB Item Spawner] Started with menu key I.
+[11:39:41 TRACE game] Registered trigger action handler 'spacechase0.GenericModConfigMenu_OpenModConfig'.
+[11:39:41 INFO  Progressive Tax] BuildingTaxValue: 100
+[11:39:41 INFO  Progressive Tax] AnimalTaxValue: 0.001
+[11:39:41 INFO  Progressive Tax] MaxYearlyTax: 0.1
+[11:39:41 INFO  Progressive Tax] YearlyTaxValue: 0.005
+[11:39:41 DEBUG SMAPI] Mods loaded and ready!
+[11:39:41 TRACE SMAPI] Checking for known software conflicts...
+[11:39:41 TRACE SMAPI]    None found!
+[11:39:41 TRACE SMAPI] Checking for updates...
+[11:39:42 TRACE game] setGameMode( 'titleScreenGameMode (0)' )
+[11:39:42 TRACE SMAPI] Running on GPU: Intel(R) Iris(R) Xe Graphics
+[11:39:42 TRACE game] Steam logged on: True
+[11:39:42 TRACE game] Initializing GalaxySDK
+[11:39:42 TRACE game] Requesting Steam app ticket
+[11:39:43 TRACE SMAPI]    SMAPI okay.
+[11:39:43 TRACE SMAPI]    Checking for updates to 3 mods...
+[11:39:43 TRACE SMAPI]    All mods up to date.
+[11:39:43 INFO  SMAPI] Type 'help' for help, or 'help <cmd>' for a command's usage
+[11:39:43 TRACE CJB Item Spawner] Accessed mod-provided API (GenericModConfigMenu.Framework.Api) for Generic Mod Config Menu.
+[11:39:43 TRACE Progressive Tax] Accessed mod-provided API (GenericModConfigMenu.Framework.Api) for Generic Mod Config Menu.
+[11:39:43 ERROR Progressive Tax] This mod failed in the GameLoop.GameLaunched event. Technical details: 
+ArgumentException: Unhandled proxy/conversion method for info: ProxyInfo{target: TypeInfo{context: spacechase0.GenericModConfigMenu, type: GenericModConfigMenu.Framework.Api, GenericModConfigMenu, Version=1.14.0.0, Culture=neutral, PublicKeyToken=null}, proxy: TypeInfo{context: SatriaCahaya.Progressive_Tax, type: GenericModConfigMenu.IGenericModConfigMenuApi, Progressive_Tax, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null}}
+ ---> ArgumentException: The IGenericModConfigMenuApi interface defines method OpenModMenuAsChildMenu which doesn't exist in the API or depends on an interface that cannot be mapped!
+   at Nanoray.Pintail.ProxyManagerConfiguration`1.<>c.<.cctor>b__42_4(ProxyInfo`1 proxyInfo, MethodInfo proxyMethod)
+   at Nanoray.Pintail.InterfaceOrDelegateProxyFactory`1.Prepare(ProxyManager`1 manager, String typeName)
+   at Nanoray.Pintail.ProxyManager`1.ObtainProxyFactory(ProxyInfo`1 proxyInfo)
+   --- End of inner exception stack trace ---
+   at Nanoray.Pintail.ProxyManager`1.ObtainProxyFactory(ProxyInfo`1 proxyInfo)
+   at Nanoray.Pintail.IProxyManagerExtensions.ObtainProxy[Context,TProxy](IProxyManager`1 self, Object instance, Context targetContext, Context proxyContext)
+   at StardewModdingAPI.Framework.ModHelpers.ModRegistryHelper.GetApi[TInterface](String uniqueID) in /home/pathoschild/git/SMAPI/src/SMAPI/Framework/ModHelpers/ModRegistryHelper.cs:line 133
+   at Progressive_Tax.TaxMod.GameLaunched(Object sender, GameLaunchedEventArgs e) in C:\Users\fahre\source\repos\Progressive_Tax\ModEntry.cs:line 73
+   at StardewModdingAPI.Framework.Events.ManagedEvent`1.Raise(TEventArgs args) in /home/pathoschild/git/SMAPI/src/SMAPI/Framework/Events/ManagedEvent.cs:line 101
+[11:39:43 TRACE game] Signing into GalaxySDK
+[11:39:44 TRACE SMAPI] Generic Mod Config Menu loaded asset 'Mods/GenericModConfigMenu/ConfigButton'.
+[11:39:44 TRACE game] Window_ClientSizeChanged(); Window.ClientBounds={X:320 Y:180 Width:1280 Height:720}
+[11:39:44 TRACE game] Galaxy auth success
+[11:39:44 TRACE game] Galaxy signed in
+[11:39:44 TRACE game] Galaxy logged on
+[11:39:45 TRACE game] Successfully set GOG Galaxy profile name.
