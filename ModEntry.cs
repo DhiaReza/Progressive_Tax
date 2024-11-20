@@ -26,7 +26,7 @@ Dynamic Tax Rates
 Current goal:
     Introduce a tax rate that increases with the player's wealth or income. : OK (through building, animals, and current year)
     Add configuration file : OK
-    Add GMCM Support
+    Add GMCM Support : OK
  */
 
 namespace Progressive_Tax
@@ -116,7 +116,7 @@ namespace Progressive_Tax
                 tooltip: () => "Adjust the tax rate applied per year.\n(Default: 1%)", // Tooltip for the option
                 min: 0f, // Minimum value
                 max: 0.1f, // Maximum value
-                interval: 0.01f, // Step size
+                interval: 0.005f, // Step size
                 formatValue: value => $"{value * 100:F1}%" // Format the value as a percentage (e.g., "1.0%")
             );
 
