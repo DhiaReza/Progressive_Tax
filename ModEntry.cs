@@ -18,6 +18,7 @@ namespace Progressive_Tax
 
         private ModConfig? config;
         // Get Player Data
+        int LoveLewis => Game1.player.getFriendshipLevelForNPC("Lewis");
         int buildingCount => Game1.getFarm().buildings.Count;
         int animalCount => Game1.getFarm().getAllFarmAnimals().Count();
         private IList<Item> shippingBin => Game1.getFarm().getShippingBin(Game1.player);
@@ -37,19 +38,23 @@ namespace Progressive_Tax
         // Tax Rates
         public sealed class ModConfig
         {
-            public float BuildingTaxValue { get; set; } = 0.01f; // Default: 1%
+            public float BuildingTaxValue { get; set; } = 0.02f; // Default: 1%
             public float AnimalTaxValue { get; set; } = 0.001f;  // Default: 0.1%
             public float MaxYearlyTax { get; set; } = 0.1f;   // Default: 10%
             public float YearlyTaxValue { get; set; } = 0.005f;// Default: 0.5%
+
+            // Lewis Friendship to Tax conversion rate (1 int = 0.5%) max 5%
+            public float LewisLoveRate { get; set; } = 0.005f; // Default 0.5%
             public bool TaxGather { get; set; } = true; // handles when the tax should be collected
             // if true, every day, every shipped items
             // if false, every end season
             public void ResetToDefaults()
             {
-                BuildingTaxValue = 0.01f;
+                BuildingTaxValue = 0.02f;
                 AnimalTaxValue = 0.001f;
                 MaxYearlyTax = 0.1f;
                 YearlyTaxValue = 0.005f;
+                LewisLoveRate = 0.005f;
                 TaxGather = true;
             }
         }
@@ -57,7 +62,7 @@ namespace Progressive_Tax
         public class TaxData
         {
             public int TotalTaxPaid { get; set; } = 0; // Start with no taxes paid
-            public int ConsecutiveSeasonsPaid { get; set; } = 0; // No streak yet
+            //public int ConsecutiveSeasonsPaid { get; set; } = 0; // No streak yet
             //public bool TaxPaidThisSeason { get; set; } = false; // Assume no taxes this season
             public List<int> TaxesPaidHistory { get; set; } = new List<int>(); // Empty history
         }
@@ -95,7 +100,7 @@ namespace Progressive_Tax
             if (shippingBin.Count > 0)
             {
                 Monitor.Log(ShippingBinToString(), LogLevel.Info);
-                int dailyTax = ApplyTaxToShippingBin(shippingBin, config.TaxGather);
+                int dailyTax = ApplyTaxToShippingBin(shippingBin, config.TaxGather, config.LewisLoveRate);
                 taxData.TotalTaxPaid += dailyTax;
                 Monitor.Log($"{dailyTax}g paid today for tax", LogLevel.Info);
                 Monitor.Log($"Total tax paid {taxData.TotalTaxPaid}g", LogLevel.Info);
@@ -108,7 +113,7 @@ namespace Progressive_Tax
 
         private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
         {
-            getCurrentDate();
+            Monitor.Log(getDay().ToString(),LogLevel.Info);
             taxData = Helper.Data.ReadSaveData<TaxData>("TaxData") ?? new TaxData();
             NotifyNewInstallation();
         }
@@ -123,10 +128,10 @@ namespace Progressive_Tax
             Helper.Data.WriteSaveData("TaxData", taxData);
         }
 
-        private int ApplyTaxToShippingBin(System.Collections.Generic.IList<Item> shippingBin, bool immediateMode)
+        private int ApplyTaxToShippingBin(System.Collections.Generic.IList<Item> shippingBin, bool immediateMode, float LewisRate)
         {
             // Calculate tax rate
-            float taxRate = CalculateTaxRate(buildingCount, animalCount, currentYear);
+            float taxRate = CalculateTaxRate(buildingCount, animalCount, currentYear, LewisRate);
 
             int totalGoldLost = 0; // Track total lost gold
             int totalTaxAmount = 0; // Track tax amount for deferred payment
@@ -176,7 +181,7 @@ namespace Progressive_Tax
 
 
         // Tax Calculation
-        private float CalculateTaxRate(int buildingCount, int animalCount, int currentYear)
+        private float CalculateTaxRate(int buildingCount, int animalCount, int currentYear, float LewisRate)
         {
             if (config == null)
             {
@@ -189,14 +194,16 @@ namespace Progressive_Tax
             float animalTax = animalCount * config.AnimalTaxValue;
             Monitor.Log($"Animal Tax : {animalTax}");
             float yearTax = currentYear * config.YearlyTaxValue;
+
             if (yearTax > config.MaxYearlyTax)
             {
                 yearTax = config.MaxYearlyTax;
             }
             Monitor.Log($"Yearly Tax : {yearTax}");
+            float LoveLewisTaxReduction = config.LewisLoveRate * LoveLewis; 
 
             // Ensure the tax does not exceed the maximum allowed
-            float totalTax = buildingTax + animalTax + yearTax;
+            float totalTax = buildingTax + animalTax + yearTax - LoveLewisTaxReduction;
             if (totalTax > 1)
             {
                 totalTax = 1;
@@ -270,12 +277,12 @@ namespace Progressive_Tax
 
             return (tillableCount, untillableCount, totalArea);
         }
-        public SDate getCurrentDate()
+/*        public SDate getCurrentSeason()
         {
-            var date = SDate.From(Game1.Date);
-            Monitor.Log($"{ date.ToLocaleString(withYear: false)}", LogLevel.Debug);
+            var date = SDate.Now();
+            Monitor.Log($"{ date.Season}", LogLevel.Debug);
             return date;
-        }
+        }*/
         private void NotifyNewInstallation()
         {
             if (taxData.TotalTaxPaid == 0 && !taxData.TaxesPaidHistory.Any())
@@ -291,12 +298,10 @@ namespace Progressive_Tax
         }
 
         // handle season change
-        private void OnSeasonChanged(string oldSeason, string newSeason)
+        private int getDay()
         {
-            Monitor.Log($"Season changed from {oldSeason} to {newSeason}!", LogLevel.Info);
-
-            // Example: Perform some action on season change
-            Game1.addHUDMessage(new HUDMessage($"Welcome to {newSeason}!", HUDMessage.newQuest_type));
+            var day = SDate.Now().Day;
+            return day;
         }
     }
 }

@@ -42,8 +42,10 @@ namespace Progressive_Tax
 
             AddNumberOption(configMenu, "Max Yearly Tax Rate", "Adjust the maximum yearly tax rate.\n(Default: 10%)",
                 () => config.MaxYearlyTax, value => config.MaxYearlyTax = value, 0f, 0.2f, 0.005f);
-            AddBoolOption(configMenu, () => config.TaxGather, value => config.TaxGather = value, "Tax Collect Time", "Checked : At every shippning\nNot Checked : At the end of season");
-            
+            AddNumberOption(configMenu, "Lewis Heart Tax Reduction", "Adjust tax reduction based on lewis heart.\n(Default: 0.5%)",
+    () => config.LewisLoveRate, value => config.LewisLoveRate = value, 0f, 0.2f, 0.005f);
+            //AddBoolOption(configMenu, () => config.TaxGather, value => config.TaxGather = value, "Tax Collect Time", "Checked : At every shippning\nNot Checked : At the end of season");
+            // too hard bruh
         }
 
         private void AddNumberOption(IGenericModConfigMenuApi configMenu, string name, string tooltip,

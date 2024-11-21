@@ -15,10 +15,26 @@ Dynamic Tax Rates
 
 Critical :
     Create a plan forward to develop the mod
+        Tax System
+
+        Currently, the tax system is counted directly everytime a player shipped items through shipping bin. The tax
+        rate is counted from how many buildings, animals and years has passed. 
+
+        My current plan is to make 2 tax systems. Assets and product. Asset system is a tax system based on how much
+        Assets you got like buildings and animals. These buildings/animals will be taxed at the end of every season based on a percentage
+        of the building's price.
+
+        The second one is product. where it's tax according to like product category and its quality. This needs more research.
+
+        Reward system
+
+        The reward system will be implemented when the tax system is final.
+
+
 
 Current goal:
     Tax based on season : 
-    Save Progression per save :
+    Save Progression per save : OK
     Think about a reward system :
 
 Things Done :
