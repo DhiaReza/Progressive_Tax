@@ -42,6 +42,8 @@ namespace Progressive_Tax
 
             AddNumberOption(configMenu, "Max Yearly Tax Rate", "Adjust the maximum yearly tax rate.\n(Default: 10%)",
                 () => config.MaxYearlyTax, value => config.MaxYearlyTax = value, 0f, 0.2f, 0.005f);
+            AddBoolOption(configMenu, () => config.TaxGather, value => config.TaxGather = value, "Tax Collect Time", "Checked : At every shippning\nNot Checked : At the end of season");
+            
         }
 
         private void AddNumberOption(IGenericModConfigMenuApi configMenu, string name, string tooltip,
@@ -58,6 +60,18 @@ namespace Progressive_Tax
                 max: max,
                 interval: interval,
                 formatValue: value => $"{value * 100:F1}%"
+            );
+        }
+        private void AddBoolOption(IGenericModConfigMenuApi configMenu, Func<bool> getValue, Action<bool> setValue, string name, string tooltip = null, string fieldId = null)
+        {
+            configMenu.SetTitleScreenOnlyForNextOptions(manifest, false);
+            configMenu.AddBoolOption(
+                mod: manifest,
+                name: () => name,
+                tooltip: () => tooltip,
+                getValue: getValue,
+                setValue: setValue,
+                fieldId: fieldId
             );
         }
     }

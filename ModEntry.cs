@@ -26,6 +26,8 @@ namespace Progressive_Tax
         private float _CurrentTaxRate;
 
         private TaxData? taxData;
+
+        private string _previousSeason;
         public float CurrentTaxRate
         {
             get => _CurrentTaxRate;
@@ -39,12 +41,16 @@ namespace Progressive_Tax
             public float AnimalTaxValue { get; set; } = 0.001f;  // Default: 0.1%
             public float MaxYearlyTax { get; set; } = 0.1f;   // Default: 10%
             public float YearlyTaxValue { get; set; } = 0.005f;// Default: 0.5%
+            public bool TaxGather { get; set; } = true; // handles when the tax should be collected
+            // if true, every day, every shipped items
+            // if false, every end season
             public void ResetToDefaults()
             {
                 BuildingTaxValue = 0.01f;
                 AnimalTaxValue = 0.001f;
                 MaxYearlyTax = 0.1f;
                 YearlyTaxValue = 0.005f;
+                TaxGather = true;
             }
         }
 
@@ -60,12 +66,6 @@ namespace Progressive_Tax
         {
             // Load configuration from the JSON file
             config = helper.ReadConfig<ModConfig>();
-
-            // Log the loaded values for debugging
-            Monitor.Log($"BuildingTaxValue: {config.BuildingTaxValue}", LogLevel.Info);
-            Monitor.Log($"AnimalTaxValue: {config.AnimalTaxValue}", LogLevel.Info);
-            Monitor.Log($"MaxYearlyTax: {config.MaxYearlyTax}", LogLevel.Info);
-            Monitor.Log($"YearlyTaxValue: {config.YearlyTaxValue}", LogLevel.Info);
 
             // Hook into the in-game state
             helper.Events.GameLoop.DayEnding += this.OnDayEnding;
@@ -95,7 +95,7 @@ namespace Progressive_Tax
             if (shippingBin.Count > 0)
             {
                 Monitor.Log(ShippingBinToString(), LogLevel.Info);
-                int dailyTax = ApplyTaxToShippingBin(shippingBin);
+                int dailyTax = ApplyTaxToShippingBin(shippingBin, config.TaxGather);
                 taxData.TotalTaxPaid += dailyTax;
                 Monitor.Log($"{dailyTax}g paid today for tax", LogLevel.Info);
                 Monitor.Log($"Total tax paid {taxData.TotalTaxPaid}g", LogLevel.Info);
@@ -123,37 +123,55 @@ namespace Progressive_Tax
             Helper.Data.WriteSaveData("TaxData", taxData);
         }
 
-        private int ApplyTaxToShippingBin(System.Collections.Generic.IList<Item> shippingBin)
+        private int ApplyTaxToShippingBin(System.Collections.Generic.IList<Item> shippingBin, bool immediateMode)
         {
             // Calculate tax rate
             float taxRate = CalculateTaxRate(buildingCount, animalCount, currentYear);
 
             int totalGoldLost = 0; // Track total lost gold
+            int totalTaxAmount = 0; // Track tax amount for deferred payment
 
             // Apply tax to each item
             for (int i = 0; i < shippingBin.Count; i++)
             {
                 if (shippingBin[i] is StardewValley.Object obj && obj.canBeShipped())
                 {
+                    int ItemQuantity = obj.Stack;
                     int basePrice = obj.sellToStorePrice(); // Original sell price
-                    int taxedPrice = (int)(basePrice * (1 - taxRate)); // Apply tax
+                    int totalBasePrice = basePrice*ItemQuantity;
+                    int taxedPrice = (int)(totalBasePrice * (1 - taxRate)); // Apply tax
 
                     // Calculate the gold lost due to tax
-                    int goldLost = basePrice - taxedPrice;
+                    int goldLost = totalBasePrice - taxedPrice;
                     totalGoldLost += goldLost;
 
-                    // Update the price (this only affects profits)
-                    obj.Price = taxedPrice;
-
-                    // Log details
-                    Monitor.Log($"Applied {taxRate:P1} tax to {obj.DisplayName}. New price: {taxedPrice}g (was {basePrice}g). Gold lost: {goldLost}g.", LogLevel.Info);
+                    if (immediateMode)
+                    {
+                        // Immediate tax collection: Update price
+                        obj.Price = taxedPrice;
+                        Monitor.Log($"Immediate Tax: Applied {taxRate:P1} tax to {obj.DisplayName}. New price: {taxedPrice}g (was {basePrice}g). Gold lost: {goldLost}g.", LogLevel.Info);
+                    }
+                    else
+                    {
+                        // Deferred tax: Keep original price, store tax
+                        totalTaxAmount += goldLost;
+                        Monitor.Log($"Deferred Tax: Calculated {taxRate:P1} tax for {obj.DisplayName}. Tax amount: {goldLost}g. Original price retained: {basePrice}g.", LogLevel.Info);
+                    }
                 }
             }
 
-            // Log total gold lost
-            Monitor.Log($"Total gold lost due to tax this session: {totalGoldLost}g.", LogLevel.Info);
-
-            return totalGoldLost;
+            if (immediateMode)
+            {
+                // Log total gold lost immediately
+                Monitor.Log($"Total gold lost due to tax (immediate mode): {totalGoldLost}g.", LogLevel.Info);
+                return totalGoldLost;
+            }
+            else
+            {
+                // Store total tax amount for deferred collection
+                Monitor.Log($"Total tax stored for deferred collection: {totalTaxAmount}g.", LogLevel.Info);
+                return totalTaxAmount;
+            }
         }
 
 
@@ -270,6 +288,15 @@ namespace Progressive_Tax
                 Monitor.Log("Previous save detected, using it now", LogLevel.Info);
                 Monitor.Log($"Total tax paid {taxData.TotalTaxPaid}g", LogLevel.Info);
             }
+        }
+
+        // handle season change
+        private void OnSeasonChanged(string oldSeason, string newSeason)
+        {
+            Monitor.Log($"Season changed from {oldSeason} to {newSeason}!", LogLevel.Info);
+
+            // Example: Perform some action on season change
+            Game1.addHUDMessage(new HUDMessage($"Welcome to {newSeason}!", HUDMessage.newQuest_type));
         }
     }
 }
