@@ -35,10 +35,10 @@ namespace Progressive_Tax
         // Tax Rates
         public sealed class ModConfig
         {
-            public float BuildingTaxValue { get; set; } // Default: 1%
-            public float AnimalTaxValue { get; set; }  // Default: 0.1%
-            public float MaxYearlyTax { get; set; }   // Default: 10%
-            public float YearlyTaxValue { get; set; }// Default: 0.5%
+            public float BuildingTaxValue { get; set; } = 0.01f; // Default: 1%
+            public float AnimalTaxValue { get; set; } = 0.001f;  // Default: 0.1%
+            public float MaxYearlyTax { get; set; } = 0.1f;   // Default: 10%
+            public float YearlyTaxValue { get; set; } = 0.005f;// Default: 0.5%
             public void ResetToDefaults()
             {
                 BuildingTaxValue = 0.01f;
@@ -76,6 +76,8 @@ namespace Progressive_Tax
 
             helper.Events.GameLoop.Saving += this.OnSaving;
 
+            helper.Events.GameLoop.DayStarted += this.OnDayStarded;
+
             //helper.Events.GameLoop.
 
         }
@@ -106,8 +108,14 @@ namespace Progressive_Tax
 
         private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
         {
+            getCurrentDate();
             taxData = Helper.Data.ReadSaveData<TaxData>("TaxData") ?? new TaxData();
             NotifyNewInstallation();
+        }
+
+        private void OnDayStarded(object sender, DayStartedEventArgs e)
+        {
+
         }
 
         private void OnSaving(object sender, SavingEventArgs e)
