@@ -364,13 +364,18 @@ namespace Progressive_Tax
 
             if (seasonalMail.TryGetValue(seasonKey[nextSeason], out var mailEntry))
             {
+                int localCurrentYear = currentYear; // safe guard if people play for more than 6 years
                 string mailContent = $"{mailEntry.Subject}\n\n{mailEntry.Body}";
 
                 // Add rewards to the mail
                 foreach (var item in mailEntry.Rewards.Items)
                 {
                     Monitor.Log(item.ToString(), LogLevel.Warn);
-                    mailContent += $"%item object {item.Id} {itemCount(currentYear)} %% ";
+                    if(currentYear > 6)
+                    {
+                        localCurrentYear = 6;
+                    }
+                    mailContent += $"%item object {item.Id} {itemCount(localCurrentYear)} %% ";
                 }
 
                 if (mailEntry.Rewards.Money == true)
@@ -400,7 +405,7 @@ namespace Progressive_Tax
         // linear item count growth
         private int itemCount(int x)
         {
-            int count = 9 + 18* (x - 1);
+            int count = 9 + 18* (x - 1); //9...18..27..45..63...99...
             return count;
         }
 
