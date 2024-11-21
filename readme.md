@@ -13,7 +13,15 @@ Dynamic Tax Rates
         Seasonal Variations: Lower taxes in winter when productivity is lower.
         Local Governance: Allow players to influence the rates by befriending certain NPCs (e.g., Lewis).
 
+Critical :
+    Create a plan forward to develop the mod
+
 Current goal:
+    Tax based on season : 
+    Save Progression per save :
+    Think about a reward system :
+
+Things Done :
     Introduce a tax rate that increases with the player's wealth or income. :
         building : OK
         animals : OK
@@ -21,4 +29,3 @@ Current goal:
         tillable area : ???
     Add configuration file : OK
     Add GMCM Support : OK
-    Tax based on season : 

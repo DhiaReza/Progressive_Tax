@@ -11,33 +11,6 @@ using System.Text.Json.Serialization;
 using StardewValley.Menus;
 using StardewModdingAPI.Utilities;
 
-/*
-For future update ideas:
-
-Progressive Tax System 
-    Add tax deductions or breaks for certain expenses or charitable actions (like donating to the community center).
-
-Monthly Tax Statements
-    Provide players with a breakdown of their taxes at the end of each in-game month. This could include:
-        Revenue Breakdown: How much was taxed from different categories (e.g., crops, artisan goods, animal products).
-        Expenses: Taxable deductions based on upgrades, maintenance costs for buildings, or animal care.
-
-Dynamic Tax Rates
-    Make tax rates depend on in-game factors:
-        Seasonal Variations: Lower taxes in winter when productivity is lower.
-        Local Governance: Allow players to influence the rates by befriending certain NPCs (e.g., Lewis).
-
-Current goal:
-    Introduce a tax rate that increases with the player's wealth or income. :
-        building : OK
-        animals : OK
-        current year : OK
-        tillable area : ???
-    Add configuration file : OK
-    Add GMCM Support : OK
-    Tax based on season : 
- */
-
 namespace Progressive_Tax
 {
     public class TaxMod : Mod
@@ -51,6 +24,8 @@ namespace Progressive_Tax
         private int currentYear => Game1.year;
 
         private float _CurrentTaxRate;
+
+        private TaxData? taxData;
         public float CurrentTaxRate
         {
             get => _CurrentTaxRate;
@@ -60,10 +35,10 @@ namespace Progressive_Tax
         // Tax Rates
         public sealed class ModConfig
         {
-            public float BuildingTaxValue { get; set; } = 0.01f; // Default: 1%
-            public float AnimalTaxValue { get; set; } = 0.001f;  // Default: 0.1%
-            public float MaxYearlyTax { get; set; } = 0.1f;      // Default: 10%
-            public float YearlyTaxValue { get; set; } = 0.005f;  // Default: 0.5%
+            public float BuildingTaxValue { get; set; } // Default: 1%
+            public float AnimalTaxValue { get; set; }  // Default: 0.1%
+            public float MaxYearlyTax { get; set; }   // Default: 10%
+            public float YearlyTaxValue { get; set; }// Default: 0.5%
             public void ResetToDefaults()
             {
                 BuildingTaxValue = 0.01f;
@@ -71,6 +46,14 @@ namespace Progressive_Tax
                 MaxYearlyTax = 0.1f;
                 YearlyTaxValue = 0.005f;
             }
+        }
+
+        public class TaxData
+        {
+            public int TotalTaxPaid { get; set; } = 0; // Start with no taxes paid
+            public int ConsecutiveSeasonsPaid { get; set; } = 0; // No streak yet
+            //public bool TaxPaidThisSeason { get; set; } = false; // Assume no taxes this season
+            public List<int> TaxesPaidHistory { get; set; } = new List<int>(); // Empty history
         }
 
         public override void Entry(IModHelper helper)
@@ -84,15 +67,22 @@ namespace Progressive_Tax
             Monitor.Log($"MaxYearlyTax: {config.MaxYearlyTax}", LogLevel.Info);
             Monitor.Log($"YearlyTaxValue: {config.YearlyTaxValue}", LogLevel.Info);
 
-            // Hook into the item shipping event
+            // Hook into the in-game state
             helper.Events.GameLoop.DayEnding += this.OnDayEnding;
 
-            // Starts GMCM
-            this.Helper.Events.GameLoop.GameLaunched += this.GameLaunched;
+            Helper.Events.GameLoop.GameLaunched += this.GameLaunched;
+
+            helper.Events.GameLoop.SaveLoaded += this.OnSaveLoaded;
+
+            helper.Events.GameLoop.Saving += this.OnSaving;
+
+            //helper.Events.GameLoop.
+
         }
 
         private void GameLaunched(object sender, GameLaunchedEventArgs e)
         {
+            // load gmcm
             var configMenuHandler = new ConfigMenuHandler(config, Helper, ModManifest);
             configMenuHandler.RegisterMenu();
         }
@@ -103,17 +93,34 @@ namespace Progressive_Tax
             if (shippingBin.Count > 0)
             {
                 Monitor.Log(ShippingBinToString(), LogLevel.Info);
-                ApplyTaxToShippingBin(shippingBin);
+                int dailyTax = ApplyTaxToShippingBin(shippingBin);
+                taxData.TotalTaxPaid += dailyTax;
+                Monitor.Log($"{dailyTax}g paid today for tax", LogLevel.Info);
+                Monitor.Log($"Total tax paid {taxData.TotalTaxPaid}g", LogLevel.Info);
+                //taxData.TaxPaidThisSeason = true;
             } else
             {
                 Monitor.Log("You have no items in the shipping bin", LogLevel.Info);
             }
         }
 
-        private void ApplyTaxToShippingBin(System.Collections.Generic.IList<Item> shippingBin)
+        private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
+        {
+            taxData = Helper.Data.ReadSaveData<TaxData>("TaxData") ?? new TaxData();
+            NotifyNewInstallation();
+        }
+
+        private void OnSaving(object sender, SavingEventArgs e)
+        {
+            Helper.Data.WriteSaveData("TaxData", taxData);
+        }
+
+        private int ApplyTaxToShippingBin(System.Collections.Generic.IList<Item> shippingBin)
         {
             // Calculate tax rate
             float taxRate = CalculateTaxRate(buildingCount, animalCount, currentYear);
+
+            int totalGoldLost = 0; // Track total lost gold
 
             // Apply tax to each item
             for (int i = 0; i < shippingBin.Count; i++)
@@ -123,13 +130,24 @@ namespace Progressive_Tax
                     int basePrice = obj.sellToStorePrice(); // Original sell price
                     int taxedPrice = (int)(basePrice * (1 - taxRate)); // Apply tax
 
+                    // Calculate the gold lost due to tax
+                    int goldLost = basePrice - taxedPrice;
+                    totalGoldLost += goldLost;
+
                     // Update the price (this only affects profits)
                     obj.Price = taxedPrice;
-                    Monitor.Log($"Applying tax according to {buildingCount} building(s), {animalCount} animal(s), and {currentYear} year(s) of playing");
-                    Monitor.Log($"Applied {taxRate:P1} tax to {obj.DisplayName} according to. New price: {taxedPrice}g (was {basePrice}g).", LogLevel.Info);
+
+                    // Log details
+                    Monitor.Log($"Applied {taxRate:P1} tax to {obj.DisplayName}. New price: {taxedPrice}g (was {basePrice}g). Gold lost: {goldLost}g.", LogLevel.Info);
                 }
             }
+
+            // Log total gold lost
+            Monitor.Log($"Total gold lost due to tax this session: {totalGoldLost}g.", LogLevel.Info);
+
+            return totalGoldLost;
         }
+
 
         // Tax Calculation
         private float CalculateTaxRate(int buildingCount, int animalCount, int currentYear)
@@ -231,6 +249,19 @@ namespace Progressive_Tax
             var date = SDate.From(Game1.Date);
             Monitor.Log($"{ date.ToLocaleString(withYear: false)}", LogLevel.Debug);
             return date;
+        }
+        private void NotifyNewInstallation()
+        {
+            if (taxData.TotalTaxPaid == 0 && !taxData.TaxesPaidHistory.Any())
+            {
+                //Game1.addMailForTomorrow("new_tax_mod_install", false, false);
+                Monitor.Log("Detected mid-game installation. Default values will be used instead.", LogLevel.Info);
+            }
+            else 
+            {
+                Monitor.Log("Previous save detected, using it now", LogLevel.Info);
+                Monitor.Log($"Total tax paid {taxData.TotalTaxPaid}g", LogLevel.Info);
+            }
         }
     }
 }
