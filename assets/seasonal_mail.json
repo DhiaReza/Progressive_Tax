@@ -1,0 +1,62 @@
+﻿{
+    "spring": {
+        "mailID": "spring",
+        "subject": "Dear @^",
+        "body": "Spring has ended but the tax goes on. You have paid us {gold}g this season, keep up the good work. By the way, here a little gift as our gratitude. ^^ -The IRS",
+        "ending": "The IRS",
+        "rewards": {
+            "items": [
+                {
+                    "id": "472",
+                    "quantity": "5"
+                }
+            ], // Parsnips
+            "money": false
+        }
+    },
+    "summer": {
+        "mailID": "summer",
+        "subject": "Hey, @,^",
+        "body": "Are you well? does the heat been bugging you? By the way, here's this season summary : ^^ 1. Paid {gold}g. Use it wisely. ^^ -Your 'Friend'",
+        "ending": "Your 'Friend'",
+        "rewards": {
+            "items": [
+                {
+                    "id": "431",
+                    "quantity": "1"
+                }
+            ], // Melon seeds
+            "money": false
+        }
+    },
+    "fall": {
+        "mailID": "fall",
+        "subject": "Autumn Thoughts",
+        "body": "The leaves are freezing. A perfect time to reflect and plan ahead (fishing). Hope this will help you in the winter. ^^ -IT",
+        "ending": "'IT'",
+        "rewards": {
+            "items": [
+                {
+                    "id": "433",
+                    "quantity": "2"
+                }
+            ], // Pumpkin seeds
+            "money": false
+        }
+    },
+    "winter": {
+        "mailID": "winter",
+        "subject": "Winter Warmth",
+        "body": "Apparently, we miss counted your tax money.Here's your refund, hope this will help you start the season. ^^ -Tax Collector",
+        "ending": "Tax Collector",
+        "rewards": {
+            "items": [
+                {
+                    "id": "745",
+                    "quantity": "9"
+                }
+            ], // Strawberry Seed
+            "money": true
+        }
+    }
+}
