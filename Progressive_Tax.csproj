@@ -5,6 +5,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <BaseOutputPath>C:\Users\fahre\source\repos\Progressive_Tax\build</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

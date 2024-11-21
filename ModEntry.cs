@@ -370,7 +370,7 @@ namespace Progressive_Tax
                 foreach (var item in mailEntry.Rewards.Items)
                 {
                     Monitor.Log(item.ToString(), LogLevel.Warn);
-                    mailContent += $"%item object {item.Id} {item.Quantity} %% ";
+                    mailContent += $"%item object {item.Id} {itemCount(currentYear)} %% ";
                 }
 
                 if (mailEntry.Rewards.Money == true)
@@ -396,7 +396,13 @@ namespace Progressive_Tax
                 Monitor.Log($"No mail entry found for season: {seasonKey[nextSeason]}", LogLevel.Warn);
             }
         }
-
+        
+        // linear item count growth
+        private int itemCount(int x)
+        {
+            int count = 9 + 18* (x - 1);
+            return count;
+        }
 
     }
 }

@@ -46,6 +46,7 @@ namespace Progressive_Tax
     () => config.LewisLoveRate, value => config.LewisLoveRate = value, 0f, 0.2f, 0.005f);
             //AddBoolOption(configMenu, () => config.TaxGather, value => config.TaxGather = value, "Tax Collect Time", "Checked : At every shippning\nNot Checked : At the end of season");
             // too hard bruh
+            AddNumberOption(configMenu, "Tax Refund Rate", "Adjust the winter tax refund rate.\n(Default: 10%)", () => config.refundRate, value => config.refundRate = value, 0, 20, 1);
         }
 
         private void AddNumberOption(IGenericModConfigMenuApi configMenu, string name, string tooltip,
@@ -62,6 +63,22 @@ namespace Progressive_Tax
                 max: max,
                 interval: interval,
                 formatValue: value => $"{value * 100:F1}%"
+            );
+        }
+        private void AddNumberOption(IGenericModConfigMenuApi configMenu, string name, string tooltip,
+    Func<int> getValue, Action<int> setValue, int min, int max, int interval)
+        {
+            configMenu.SetTitleScreenOnlyForNextOptions(manifest, true);
+            configMenu.AddNumberOption(
+                mod: manifest,
+                getValue: getValue,
+                setValue: setValue,
+                name: () => name,
+                tooltip: () => tooltip,
+                min: min,
+                max: max,
+                interval: interval,
+                formatValue: value => $"{value}%"
             );
         }
         private void AddBoolOption(IGenericModConfigMenuApi configMenu, Func<bool> getValue, Action<bool> setValue, string name, string tooltip = null, string fieldId = null)
