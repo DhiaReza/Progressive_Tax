@@ -6,10 +6,11 @@ A tax mod to reduce items price sold through the shipping bin according to 3 fac
 Each factor can be configured through MCM or stright to config.json (if you want some crazy values).
 
 Current goal :
-	Refactor seasonal_mail.json structur. (change quantity field to bool). and change the code to allow individual and multiple items at single mail_
+	implement a better reward system according to tax instead of just random stuff given.
 
 Done :
 	Implement mailing for future reward system. OK
+	Refactor seasonal_mail.json structur. (change quantity field to bool). and change the code to allow individual and multiple items at single mail call
 
 Don't want to take things too complicated. This is my first mod. Do things bit by bit.
 

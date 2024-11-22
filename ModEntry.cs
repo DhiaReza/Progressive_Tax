@@ -50,7 +50,7 @@ namespace Progressive_Tax
 
             // Lewis Friendship to Tax conversion rate (1 int = 0.5%) max 5%
             public float LewisLoveRate { get; set; } = 0.005f; // Default 0.5%
-            public int refundRate { get; set; } = 10;
+            public int refundRate { get; set; } = 30;
             public bool TaxGather { get; set; } = true; // handles when the tax should be collected
             // if true, every day, every shipped items
             // if false, every end season
@@ -61,15 +61,16 @@ namespace Progressive_Tax
                 MaxYearlyTax = 0.1f;
                 YearlyTaxValue = 0.005f;
                 LewisLoveRate = 0.005f;
-                refundRate = 10;
+                refundRate = 30;
                 TaxGather = true;
             }
         }
 
         public class TaxData
         {
-            public int TotalTaxPaid { get; set; } = 0; // Start with no taxes paid
+            public int TotalTaxPaidThisSave { get; set; } = 0; // Start with no taxes paid
             public int TotalTaxPaidCurrentSeason { get; set; } = 0;
+            public int TotalTaxPaidThisYear{ get; set; } = 0;
             //public int ConsecutiveSeasonsPaid { get; set; } = 0; // No streak yet
             //public bool TaxPaidThisSeason { get; set; } = false; // Assume no taxes this season
             public List<int> TaxesPaidHistory { get; set; } = new List<int>(); // Empty history
@@ -103,7 +104,7 @@ namespace Progressive_Tax
         public class ItemReward
         {
             public string Id { get; set; }
-            public int Quantity { get; set; }
+            public bool Quantity { get; set; }
         }
 
         public override void Entry(IModHelper helper)
@@ -112,7 +113,6 @@ namespace Progressive_Tax
             // load seasonal message
             seasonalMail = helper.Data.ReadJsonFile<Dictionary<string, MailEntry>>("./assets/seasonal_mail.json")
                ?? new Dictionary<string, MailEntry>();
-
             // Load configuration from the JSON file
             config = helper.ReadConfig<ModConfig>();
 
@@ -145,10 +145,10 @@ namespace Progressive_Tax
             {
                 Monitor.Log(ShippingBinToString(), LogLevel.Info);
                 int dailyTax = ApplyTaxToShippingBin(shippingBin, config.TaxGather, config.LewisLoveRate);
-                taxData.TotalTaxPaid += dailyTax;
+                taxData.TotalTaxPaidThisSave += dailyTax;
                 taxData.TotalTaxPaidCurrentSeason += dailyTax;
                 Monitor.Log($"{dailyTax}g paid today for tax", LogLevel.Info);
-                Monitor.Log($"Total tax paid {taxData.TotalTaxPaid}g", LogLevel.Info);
+                Monitor.Log($"Total tax paid {taxData.TotalTaxPaidThisSave}g", LogLevel.Info);
                 //taxData.TaxPaidThisSeason = true;
             } else
             {
@@ -332,7 +332,7 @@ namespace Progressive_Tax
 
         private void NotifyNewInstallation()
         {
-            if (taxData.TotalTaxPaid == 0 && !taxData.TaxesPaidHistory.Any())
+            if (taxData.TotalTaxPaidThisSave == 0 && !taxData.TaxesPaidHistory.Any())
             {
                 //Game1.addMailForTomorrow("new_tax_mod_install", false, false);
                 Monitor.Log("Detected mid-game installation. Starting from 0.", LogLevel.Info);
@@ -340,7 +340,7 @@ namespace Progressive_Tax
             else 
             {
                 Monitor.Log("Previous save detected, using it now", LogLevel.Info);
-                Monitor.Log($"Total tax paid {taxData.TotalTaxPaid}g", LogLevel.Info);
+                Monitor.Log($"Total tax paid {taxData.TotalTaxPaidThisSave}g", LogLevel.Info);
                 Monitor.Log($"Total tax paid this season {taxData.TotalTaxPaidCurrentSeason}g");
             }
         }
@@ -371,24 +371,31 @@ namespace Progressive_Tax
                 foreach (var item in mailEntry.Rewards.Items)
                 {
                     Monitor.Log(item.ToString(), LogLevel.Warn);
-                    if(currentYear > 6)
+                    if(item.Quantity == true)
                     {
-                        localCurrentYear = 6;
+                        if (currentYear > 6)
+                        {
+                            localCurrentYear = 6;
+                        }
+                        mailContent += $"^%item object {item.Id} {itemCount(localCurrentYear)} %% ";
                     }
-                    mailContent += $"%item object {item.Id} {itemCount(localCurrentYear)} %% ";
+                    else
+                    {
+                        mailContent += $"^%item object {item.Id} 1 %% ";
+                    }
                 }
 
                 if (mailEntry.Rewards.Money == true)
                 {
                     int refundMoney = taxData.TotalTaxPaidCurrentSeason * config.refundRate/100;
-                    mailContent += $"%money {mailEntry.Rewards.Money} %% ";
+                    mailContent += $"^%item money {refundMoney} %% ";
                 }
-
+                Game1.IsThereABuildingUnderConstruction();
                 mailContent += $"[#]{mailEntry.Ending}";
 
-                if (seasonKey[nextSeason] == "spring")
+                if (seasonKey[nextSeason] == "spring") // change this to switch case
                 {
-                    mailContent = mailContent.Replace("{gold}", taxData.TotalTaxPaidCurrentSeason.ToString());
+                    mailContent = mailContent.Replace("{gold}", taxData.TotalTaxPaidThisYear.ToString());
                 }
                 // Add the mail to the game
                 Game1.content.Load<Dictionary<string, string>>("Data\\Mail")[mailEntry.MailID] = mailContent;

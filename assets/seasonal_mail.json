@@ -8,7 +8,7 @@
             "items": [
                 {
                     "id": "479", //melon seed
-                    "quantity": "1"
+                    "quantity": true
                 }
             ],
             "money": false
@@ -23,7 +23,7 @@
             "items": [
                 {
                     "id": "490", // pumpkin seed
-                    "quantity": "1"
+                    "quantity": true
                 }
             ], // Melon seeds
             "money": false
@@ -38,11 +38,11 @@
             "items": [
                 {
                     "id": "287", //magic bait
-                    "quantity": "2"
+                    "quantity": true
                 },
                 {
                     "id": "774", //wild bait
-                    "quantity":  "2"
+                    "quantity": true
                 }
             ], // Pumpkin seeds
             "money": false
@@ -51,13 +51,13 @@
     "winter": {
         "mailID": "winter",
         "subject": "Winter Warmth",
-        "body": "Apparently, we miss counted your tax money.Here's your refund, hope this will help you start the season. ^^ -Tax Collector",
+        "body": "You paid us {gold}g this year, but we miss counted your tax money. So here's your refund, hope this will help you start the season. ^^ -Tax Collector",
         "ending": "Tax Collector",
         "rewards": {
             "items": [
                 {
                     "id": "745", // Strawberry Seed
-                    "quantity": "1"
+                    "quantity": true
                 }
             ], 
             "money": true
