@@ -25,6 +25,8 @@ namespace Progressive_Tax
         private IList<Item> shippingBin => Game1.getFarm().getShippingBin(Game1.player);
         private int currentYear => Game1.year;
 
+        private SendMail mailing;
+
         private float _CurrentTaxRate;
 
         private TaxData? taxData;
@@ -33,7 +35,8 @@ namespace Progressive_Tax
 
         private string _previousSeason;
 
-        public string _mailPath;
+        //public string _mailPath;
+
         public float CurrentTaxRate
         {
             get => _CurrentTaxRate;
@@ -66,18 +69,6 @@ namespace Progressive_Tax
             }
         }
 
-        public class TaxData
-        {
-            public int TotalTaxPaidThisSave { get; set; } = 0; // Start with no taxes paid
-            public int TotalTaxPaidCurrentSeason { get; set; } = 0;
-            public int TotalTaxPaidThisYear{ get; set; } = 0;
-            //public int ConsecutiveSeasonsPaid { get; set; } = 0; // No streak yet
-            //public bool TaxPaidThisSeason { get; set; } = false; // Assume no taxes this season
-            public List<int> TaxesPaidHistory { get; set; } = new List<int>(); // Empty history
-        }
-
-        private Dictionary<string, MailEntry> seasonalMail;
-
         private Dictionary<int, string> seasonKey = new Dictionary<int, string>()
         {
             { 0, "spring" },
@@ -86,33 +77,16 @@ namespace Progressive_Tax
             { 3, "winter" }
         };
 
-        public class MailEntry
+        public class TaxData
         {
-            public string MailID { get; set; }
-            public string Subject { get; set; }
-            public string Body { get; set; }
-            public string Ending { get; set; }
-            public RewardData Rewards { get; set; }
-        }
-
-        public class RewardData
-        {
-            public List<ItemReward> Items { get; set; } = new();
-            public bool Money { get; set; } = false;
-        }
-
-        public class ItemReward
-        {
-            public string Id { get; set; }
-            public bool Quantity { get; set; }
+            public int TotalTaxPaidThisSave { get; set; } = 0; // Start with no taxes paid
+            public int TotalTaxPaidCurrentSeason { get; set; } = 0;
+            public int TotalTaxPaidThisYear{ get; set; } = 0;
         }
 
         public override void Entry(IModHelper helper)
         {
-            _mailPath = Path.Combine(this.Helper.DirectoryPath, "assets", "seasonal_mail.json");
-            // load seasonal message
-            seasonalMail = helper.Data.ReadJsonFile<Dictionary<string, MailEntry>>("./assets/seasonal_mail.json")
-               ?? new Dictionary<string, MailEntry>();
+
             // Load configuration from the JSON file
             config = helper.ReadConfig<ModConfig>();
 
@@ -127,7 +101,7 @@ namespace Progressive_Tax
 
             helper.Events.GameLoop.DayStarted += this.OnDayStarded;
 
-            //helper.Events.GameLoop.
+            // get data for mailing
 
         }
 
@@ -147,27 +121,38 @@ namespace Progressive_Tax
                 int dailyTax = ApplyTaxToShippingBin(shippingBin, config.TaxGather, config.LewisLoveRate);
                 taxData.TotalTaxPaidThisSave += dailyTax;
                 taxData.TotalTaxPaidCurrentSeason += dailyTax;
+                taxData.TotalTaxPaidThisYear += dailyTax;
                 Monitor.Log($"{dailyTax}g paid today for tax", LogLevel.Info);
-                Monitor.Log($"Total tax paid {taxData.TotalTaxPaidThisSave}g", LogLevel.Info);
+                Monitor.Log($"Total tax paid this season :{taxData.TotalTaxPaidCurrentSeason}g", LogLevel.Info);
+                Monitor.Log($"Total tax paid this year :{taxData.TotalTaxPaidThisYear}g", LogLevel.Info);
                 //taxData.TaxPaidThisSeason = true;
             } else
             {
                 Monitor.Log("You have no items in the shipping bin", LogLevel.Info);
             }
             int today = getDay();
+            int thisSeason = getSeason();
             if (today == 28)
             {
-                SendSeasonalMail(Game1.seasonIndex);
+                //int CurrentSeason, int currentYear, int currentSeasonTaxData, int ThisYearTaxData, int refundRate
+                mailing.SendSeasonalMail(getSeason()); //returns season index
                 taxData.TotalTaxPaidCurrentSeason = 0;
+                if (thisSeason == 3)
+                {
+                    taxData.TotalTaxPaidThisYear = 0;
+                    mailing.SendRegularMail("TaxRefund");
+                }
             }
         }
 
         private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
         {
-            Monitor.Log(getDay().ToString(),LogLevel.Info);
+            Monitor.Log($"Year : {this.currentYear}" ,LogLevel.Info);
             taxData = Helper.Data.ReadSaveData<TaxData>("TaxData") ?? new TaxData();
             NotifyNewInstallation();
-            //SendSeasonalMail();
+
+            mailing = new SendMail(Monitor, Helper, getSeason(), currentYear, taxData.TotalTaxPaidCurrentSeason, taxData.TotalTaxPaidThisYear, taxData.TotalTaxPaidThisSave, config.refundRate);
+
         }
 
         private void OnDayStarded(object sender, DayStartedEventArgs e)
@@ -332,7 +317,7 @@ namespace Progressive_Tax
 
         private void NotifyNewInstallation()
         {
-            if (taxData.TotalTaxPaidThisSave == 0 && !taxData.TaxesPaidHistory.Any())
+            if (taxData.TotalTaxPaidThisSave == 0)
             {
                 //Game1.addMailForTomorrow("new_tax_mod_install", false, false);
                 Monitor.Log("Detected mid-game installation. Starting from 0.", LogLevel.Info);
@@ -356,57 +341,6 @@ namespace Progressive_Tax
         {
             int day = SDate.Now().SeasonIndex;
             return day;
-        }
-
-        public void SendSeasonalMail(int CurrentSeason)
-        {
-            int nextSeason = CurrentSeason;
-
-            if (seasonalMail.TryGetValue(seasonKey[nextSeason], out var mailEntry))
-            {
-                int localCurrentYear = currentYear; // safe guard if people play for more than 6 years
-                string mailContent = $"{mailEntry.Subject}\n\n{mailEntry.Body}";
-
-                // Add rewards to the mail
-                foreach (var item in mailEntry.Rewards.Items)
-                {
-                    Monitor.Log(item.ToString(), LogLevel.Warn);
-                    if(item.Quantity == true)
-                    {
-                        if (currentYear > 6)
-                        {
-                            localCurrentYear = 6;
-                        }
-                        mailContent += $"^%item object {item.Id} {itemCount(localCurrentYear)} %% ";
-                    }
-                    else
-                    {
-                        mailContent += $"^%item object {item.Id} 1 %% ";
-                    }
-                }
-
-                if (mailEntry.Rewards.Money == true)
-                {
-                    int refundMoney = taxData.TotalTaxPaidCurrentSeason * config.refundRate/100;
-                    mailContent += $"^%item money {refundMoney} %% ";
-                }
-                Game1.IsThereABuildingUnderConstruction();
-                mailContent += $"[#]{mailEntry.Ending}";
-
-                if (seasonKey[nextSeason] == "spring") // change this to switch case
-                {
-                    mailContent = mailContent.Replace("{gold}", taxData.TotalTaxPaidThisYear.ToString());
-                }
-                // Add the mail to the game
-                Game1.content.Load<Dictionary<string, string>>("Data\\Mail")[mailEntry.MailID] = mailContent;
-                Game1.mailbox.Add(mailEntry.MailID);
-
-                Monitor.Log($"Mail for {seasonKey[nextSeason]} sent: {mailContent}", LogLevel.Info);
-            }
-            else
-            {
-                Monitor.Log($"No mail entry found for season: {seasonKey[nextSeason]}", LogLevel.Warn);
-            }
         }
         
         // linear item count growth
