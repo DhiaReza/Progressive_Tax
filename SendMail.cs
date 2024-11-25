@@ -74,8 +74,9 @@ namespace Progressive_Tax
         }
         private Dictionary<string, MailEntry> LoadMailData()
         {
+            var mailPath = "assets/seasonal_mail.json";
             // Load the mail data using the helper method
-            var mailData = helper.Data.ReadJsonFile<Dictionary<string, MailEntry>>("./assets/seasonal_mail.json");
+            var mailData = helper.Data.ReadJsonFile<Dictionary<string, MailEntry>>(mailPath);
 
             // If the file doesn't exist or isn't loaded correctly, return an empty dictionary
             if (mailData == null)
@@ -87,7 +88,7 @@ namespace Progressive_Tax
             return mailData;
         }
 
-        public string SendSeasonalMail(int season) //send mail about yesterday season
+        public void SendSeasonalMail(int season) //send mail about yesterday season
         {
             int nextSeason = season;
 
@@ -141,11 +142,11 @@ namespace Progressive_Tax
                 Game1.content.Load<Dictionary<string, string>>("Data\\Mail")[mailEntry.MailID] = mailContent;
                 Game1.mailbox.Add(mailEntry.MailID);
 
-                return $"Mail for {seasonKey[nextSeason]} sent: {mailContent}";
+                Monitor.Log($"Mail for {seasonKey[nextSeason]} sent: {mailContent}");
             }
             else
             {
-                return "$No mail entry found for season: {seasonKey[nextSeason]}";
+                Monitor.Log($"No mail entry found for season: {seasonKey[nextSeason]}");
             }
         }
         private int itemCount(int x)

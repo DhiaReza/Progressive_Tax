@@ -11,6 +11,9 @@ using System.Text.Json.Serialization;
 using StardewValley.Menus;
 using StardewModdingAPI.Utilities;
 using System.Runtime.CompilerServices;
+using StardewValley.Buildings;
+using System.Reflection;
+using StardewValley.GameData.Buildings;
 
 namespace Progressive_Tax
 {
@@ -34,6 +37,8 @@ namespace Progressive_Tax
         private string _currentSeason;
 
         private string _previousSeason;
+
+        private string buildingBeingBuilt;
 
         //public string _mailPath;
 
@@ -114,6 +119,11 @@ namespace Progressive_Tax
 
         private void OnDayEnding(object? sender, DayEndingEventArgs e)
         {
+            if (isThereBuildingBuilt() == false) 
+            {
+                reduceBuildingBuiltTime();
+            }
+
             // Check if the shipping bin contains items
             if (shippingBin.Count > 0)
             {
@@ -349,6 +359,88 @@ namespace Progressive_Tax
             int count = 9 + 18* (x - 1); //9...18..27..45..63...99...
             return count;
         }
+        private static int GetBuildingPrice(string buildingType)
+        {
+            var blueprints = Game1.content.Load<Dictionary<string, string>>("Data/Blueprints");
 
+            if (blueprints.TryGetValue(buildingType, out string blueprintData))
+            {
+                var data = blueprintData.Split('/');
+                return int.TryParse(data[0], out int price) ? price : -1;
+            }
+
+            return -1; // Building type not found
+        }
+
+        private string? GetBuildingType(Building building)
+        {
+            if(building?.buildingType != null)
+            {
+                var StringBuild = building.buildingType.ToString();
+                return StringBuild;
+            }
+            else
+            {
+                return "unknown building";
+            }
+
+        }
+        private void reduceBuildingBuiltTime()
+        {
+            var building = Game1.GetBuildingUnderConstruction();
+            Monitor.Log($"the first building : {building}");
+            var building2 = Game1.getFarm().buildings.FirstOrDefault(b => b.isUnderConstruction());
+            Monitor.Log($"the first building : {building2}");
+
+            if (building.daysOfConstructionLeft != null)
+            {
+                int currentDays = building.daysOfConstructionLeft.Value;
+                Monitor.Log($"Building built time : {currentDays}");
+                building.daysOfConstructionLeft.Value = Math.Max(currentDays - 1, 0); // Prevent negative values
+                Monitor.Log($"Reduced construction days. Remaining days: {building.daysOfConstructionLeft.Value}");
+            }
+            else
+            {
+                Monitor.Log("Error: daysOfConstructionLeft is null.");
+            }
+        }
+        private bool isThereBuildingBuilt()
+        {
+            buildingBeingBuilt = GetBuildingType(Game1.GetBuildingUnderConstruction());
+            if (Game1.getFarm().isThereABuildingUnderConstruction() == true)
+            {
+                Monitor.Log($"Construction of {buildingBeingBuilt}.", LogLevel.Warn);
+                return false;
+            }
+            else
+            {
+                Monitor.Log("No buildings are under construction.", LogLevel.Warn);
+                return true;
+            }
+
+        }
+        //public void CheckBuildingBuilt()
+        //{
+        //    var building = Game1.getFarm().buildings.FirstOrDefault(b => b.isUnderConstruction());
+
+        //    if (building != null)
+        //    {
+        //        string currentlyBeingBuilt = GetBuildingType(building);
+        //        Monitor.Log($"Your building Type : {currentlyBeingBuilt}", LogLevel.Warn);
+        //        // Check if this building's construction time was already reduced
+        //        if (currentlyBeingBuilt == buildingBeingBuilt)
+        //        {
+        //            Monitor.Log("Construction time for this building has already been reduced.", LogLevel.Warn);
+        //        }
+        //        else
+        //        {
+        //            // Reduce the construction time
+        //            reduceBuildingBuiltTime(building);
+        //            buildingBeingBuilt = currentlyBeingBuilt;
+        //            Monitor.Log($"Reduced construction time for: {currentlyBeingBuilt}", LogLevel.Warn);
+        //        }
+        //    }
+        //}
     }
+
 }
