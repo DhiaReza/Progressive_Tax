@@ -11,40 +11,23 @@ using System.Text.Json.Serialization;
 using StardewValley.Menus;
 using StardewModdingAPI.Utilities;
 using System.Runtime.CompilerServices;
-using static Progressive_Tax.TaxMod;
+using static Progressive_Tax.TaxMod.TaxData;
+using static Progressive_Tax.TaxMod.ModConfig;
 
 namespace Progressive_Tax
 {
     public class SendMail
     {
-
-        public int SeasonNow { get; set; }
-        public int CurrentYear { get; set; }
-        public int TaxPaidCurrentSeason { get; set; }
-        public int TaxPaidCLastSeason { get; set; }
-        public int TaxPaidThisYear { get; set; }
-        public int RefundRate { get; set; }
-        public int PaidThisSave { get; set; }
-
+        private Progressive_Tax.TaxMod.ModConfig config;
+        private Progressive_Tax.TaxMod.TaxData taxInfo;
+        private Progressive_Tax.TaxMod gameInfo;
+        private TaxMod taxMod;
         private IMonitor Monitor;
         private IModHelper helper;
         private Dictionary<string, MailEntry> seasonalMail;
 
         // Constructor to initialize the MailData object
-        public SendMail(IMonitor monitor, IModHelper helper, int season, int currentYear, int taxPaidCurrentSeason,int taxPaidLastSeason, int taxPaidThisYear, int taxPaidThisSave, int refundRate)
-        {
-            Monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
-            this.helper = helper ?? throw new ArgumentNullException(nameof(helper));
 
-            SeasonNow = season;
-            CurrentYear = currentYear;
-            TaxPaidCurrentSeason = taxPaidCurrentSeason;
-            TaxPaidThisYear = taxPaidThisYear;
-            RefundRate = refundRate;
-            PaidThisSave = taxPaidThisSave;
-
-            seasonalMail = LoadMailData(); // Initialize mail data
-        }
         private Dictionary<int, string> seasonKey = new Dictionary<int, string>()
         {
             { 0, "spring" },
@@ -89,13 +72,21 @@ namespace Progressive_Tax
             return mailData;
         }
 
-        public void SendSeasonalMail(int season) //send mail about yesterday season
+        public void SendSeasonalMail(int season) //send mail about yesterseason
         {
-            int nextSeason = season;
+            Monitor.Log($"Year : {gameInfo.currentYear}", LogLevel.Info);
+            Monitor.Log($"Love Lewis : {gameInfo.LoveLewis}", LogLevel.Info);
+            Monitor.Log($"Building Count : {gameInfo.AllBuildingCount}", LogLevel.Info);
+            Monitor.Log($"animal count : {gameInfo.animalCount}", LogLevel.Info);
+            Monitor.Log($"{taxInfo.TotalTaxPaidThisYear}", LogLevel.Info);
+            Monitor.Log($"{taxInfo.TotalTaxPaidCurrentSeason}", LogLevel.Info);
+            Monitor.Log($"{taxInfo.TotalTaxPaidThisYear}", LogLevel.Info);
+            Monitor.Log($"{config.refundRate}", LogLevel.Info);
 
+            int nextSeason = season;
             if (seasonalMail.TryGetValue(seasonKey[nextSeason], out var mailEntry))
             {
-                int localCurrentYear = CurrentYear; // safe guard if people play for more than 6 years
+                int localCurrentYear = gameInfo.currentYear; // safe guard if people play for more than 6 years
                 string mailContent = $"{mailEntry.Subject}\n\n{mailEntry.Body}";
 
                 // Add rewards to the mail
@@ -105,7 +96,7 @@ namespace Progressive_Tax
                         {
                             if (item.Quantity == true)
                             {
-                                if (CurrentYear > 6)
+                                if (localCurrentYear > 6)
                                 {
                                     localCurrentYear = 6;
                                 }
@@ -119,7 +110,7 @@ namespace Progressive_Tax
                     }
                 if (mailEntry.Rewards.Money == true)
                 {
-                    int refundMoney = TaxPaidThisYear * (RefundRate*100);
+                    int refundMoney = taxInfo.TotalTaxPaidThisYear * (config.refundRate*100);
                     mailContent += $"^%item money {refundMoney} %% ";
                 }
                 Game1.IsThereABuildingUnderConstruction();
@@ -127,16 +118,16 @@ namespace Progressive_Tax
                 switch (seasonKey[nextSeason])
                 {
                     case "spring":
-                        mailContent = mailContent.Replace("{gold}", TaxPaidCurrentSeason.ToString());
+                        mailContent = mailContent.Replace("{gold}", taxInfo.TotalTaxPaidCurrentSeason.ToString());
                         break;
                     case "summer":
-                        mailContent = mailContent.Replace("{gold}", TaxPaidCurrentSeason.ToString());
+                        mailContent = mailContent.Replace("{gold}", taxInfo.TotalTaxPaidCurrentSeason.ToString());
                         break;
                     case "fall":
-                        mailContent = mailContent.Replace("{gold}", TaxPaidCurrentSeason.ToString());
+                        mailContent = mailContent.Replace("{gold}", taxInfo.TotalTaxPaidCurrentSeason.ToString());
                         break;
                     case "winter":
-                        mailContent = mailContent.Replace("{gold}", TaxPaidThisYear.ToString());
+                        mailContent = mailContent.Replace("{gold}", taxInfo.TotalTaxPaidThisYear.ToString());
                         break;
                 }
                 // Add the mail to the game
@@ -170,7 +161,7 @@ namespace Progressive_Tax
                 }
                 if (mailEntry.Rewards.Money)
                 {
-                    int refundMoney = TaxPaidThisYear * RefundRate / 100;
+                    int refundMoney = taxInfo.TotalTaxPaidThisYear * config.refundRate / 100;
                     mailContent += $"^%item money {refundMoney} %% ";
                 }
 
