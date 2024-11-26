@@ -23,7 +23,7 @@ namespace Progressive_Tax
         private ModConfig? config;
         // Get Player Data
         int LoveLewis => Game1.player.getFriendshipLevelForNPC("Lewis");
-        int buildingCount => Game1.getFarm().buildings.Count;
+        int AllBuildingCount => Game1.getFarm().buildings.Count;
         int animalCount => Game1.getFarm().getAllFarmAnimals().Count();
         private IList<Item> shippingBin => Game1.getFarm().getShippingBin(Game1.player);
         private int currentYear => Game1.year;
@@ -38,7 +38,9 @@ namespace Progressive_Tax
 
         private string _previousSeason;
 
-        private string buildingBeingBuilt;
+        private string buildingBeingReduced;
+
+        public static Dictionary<string, int> BuildingCountperType;
 
         //public string _mailPath;
 
@@ -58,7 +60,7 @@ namespace Progressive_Tax
 
             // Lewis Friendship to Tax conversion rate (1 int = 0.5%) max 5%
             public float LewisLoveRate { get; set; } = 0.005f; // Default 0.5%
-            public int refundRate { get; set; } = 30;
+            public int refundRate { get; set; } = 15;
             public bool TaxGather { get; set; } = true; // handles when the tax should be collected
             // if true, every day, every shipped items
             // if false, every end season
@@ -86,12 +88,13 @@ namespace Progressive_Tax
         {
             public int TotalTaxPaidThisSave { get; set; } = 0; // Start with no taxes paid
             public int TotalTaxPaidCurrentSeason { get; set; } = 0;
+            public int TotalTaxPaidLastSeason { get; set; } = 0;
             public int TotalTaxPaidThisYear{ get; set; } = 0;
+            public int TotalBuildingTax { get; set; } = 0;
         }
 
         public override void Entry(IModHelper helper)
         {
-
             // Load configuration from the JSON file
             config = helper.ReadConfig<ModConfig>();
 
@@ -119,7 +122,7 @@ namespace Progressive_Tax
 
         private void OnDayEnding(object? sender, DayEndingEventArgs e)
         {
-            if (isThereBuildingBuilt() == false) 
+            if (isThereBuildingBuilt() == true) 
             {
                 reduceBuildingBuiltTime();
             }
@@ -129,13 +132,6 @@ namespace Progressive_Tax
             {
                 Monitor.Log(ShippingBinToString(), LogLevel.Info);
                 int dailyTax = ApplyTaxToShippingBin(shippingBin, config.TaxGather, config.LewisLoveRate);
-                taxData.TotalTaxPaidThisSave += dailyTax;
-                taxData.TotalTaxPaidCurrentSeason += dailyTax;
-                taxData.TotalTaxPaidThisYear += dailyTax;
-                Monitor.Log($"{dailyTax}g paid today for tax", LogLevel.Info);
-                Monitor.Log($"Total tax paid this season :{taxData.TotalTaxPaidCurrentSeason}g", LogLevel.Info);
-                Monitor.Log($"Total tax paid this year :{taxData.TotalTaxPaidThisYear}g", LogLevel.Info);
-                //taxData.TaxPaidThisSeason = true;
             } else
             {
                 Monitor.Log("You have no items in the shipping bin", LogLevel.Info);
@@ -145,7 +141,8 @@ namespace Progressive_Tax
             if (today == 28)
             {
                 //int CurrentSeason, int currentYear, int currentSeasonTaxData, int ThisYearTaxData, int refundRate
-                mailing.SendSeasonalMail(getSeason()); //returns season index
+                mailing.SendSeasonalMail(getSeason());
+                taxData.TotalTaxPaidLastSeason = taxData.TotalTaxPaidLastSeason;
                 taxData.TotalTaxPaidCurrentSeason = 0;
                 if (thisSeason == 3)
                 {
@@ -160,9 +157,12 @@ namespace Progressive_Tax
             Monitor.Log($"Year : {this.currentYear}" ,LogLevel.Info);
             taxData = Helper.Data.ReadSaveData<TaxData>("TaxData") ?? new TaxData();
             NotifyNewInstallation();
-
-            mailing = new SendMail(Monitor, Helper, getSeason(), currentYear, taxData.TotalTaxPaidCurrentSeason, taxData.TotalTaxPaidThisYear, taxData.TotalTaxPaidThisSave, config.refundRate);
-
+            BuildingCountperType = GetBuildingCounts();
+            mailing = new SendMail(Monitor, Helper, getSeason(), currentYear, taxData.TotalTaxPaidCurrentSeason,taxData.TotalTaxPaidLastSeason, taxData.TotalTaxPaidThisYear, taxData.TotalTaxPaidThisSave, config.refundRate);
+            foreach (var entry in BuildingCountperType)
+            {
+                Monitor.Log($"{entry.Key}: {entry.Value}", LogLevel.Info);
+            }
         }
 
         private void OnDayStarded(object sender, DayStartedEventArgs e)
@@ -174,11 +174,16 @@ namespace Progressive_Tax
         {
             Helper.Data.WriteSaveData("TaxData", taxData);
         }
+        // how to count, buildingtax = building price * building tax rate/28. Counted on day 28. 
+        private int ApplyTaxToBuildings()
+        {
+            return 0;
+        }
 
         private int ApplyTaxToShippingBin(System.Collections.Generic.IList<Item> shippingBin, bool immediateMode, float LewisRate)
         {
             // Calculate tax rate
-            float taxRate = CalculateTaxRate(buildingCount, animalCount, currentYear, LewisRate);
+            float taxRate = CalculateTaxRate(AllBuildingCount, animalCount, currentYear, LewisRate);
 
             int totalGoldLost = 0; // Track total lost gold
             int totalTaxAmount = 0; // Track tax amount for deferred payment
@@ -208,6 +213,7 @@ namespace Progressive_Tax
                         // Deferred tax: Keep original price, store tax
                         totalTaxAmount += goldLost;
                         Monitor.Log($"Deferred Tax: Calculated {taxRate:P1} tax for {obj.DisplayName}. Tax amount: {goldLost}g. Original price retained: {basePrice}g.", LogLevel.Info);
+
                     }
                 }
             }
@@ -215,7 +221,13 @@ namespace Progressive_Tax
             if (immediateMode)
             {
                 // Log total gold lost immediately
+                taxData.TotalTaxPaidThisSave += totalGoldLost;
+                taxData.TotalTaxPaidCurrentSeason += totalGoldLost;
+                taxData.TotalTaxPaidThisYear += totalGoldLost;
                 Monitor.Log($"Total gold lost due to tax (immediate mode): {totalGoldLost}g.", LogLevel.Info);
+                Monitor.Log($"{totalGoldLost}g paid today for tax", LogLevel.Info);
+                Monitor.Log($"Total tax paid this season :{taxData.TotalTaxPaidCurrentSeason}g", LogLevel.Info);
+                Monitor.Log($"Total tax paid this year :{taxData.TotalTaxPaidThisYear}g", LogLevel.Info);
                 return totalGoldLost;
             }
             else
@@ -385,62 +397,84 @@ namespace Progressive_Tax
             }
 
         }
+
+        // reduce building built time
         private void reduceBuildingBuiltTime()
         {
             var building = Game1.GetBuildingUnderConstruction();
-            Monitor.Log($"the first building : {building}");
-            var building2 = Game1.getFarm().buildings.FirstOrDefault(b => b.isUnderConstruction());
-            Monitor.Log($"the first building : {building2}");
-
+            var buildingName = GetBuildingType(building);
             if (building.daysOfConstructionLeft != null)
             {
-                int currentDays = building.daysOfConstructionLeft.Value;
-                Monitor.Log($"Building built time : {currentDays}");
-                building.daysOfConstructionLeft.Value = Math.Max(currentDays - 1, 0); // Prevent negative values
-                Monitor.Log($"Reduced construction days. Remaining days: {building.daysOfConstructionLeft.Value}");
+                if(buildingBeingReduced != buildingName)
+                {
+                    int currentDays = building.daysOfConstructionLeft.Value;
+                    Monitor.Log($"Building built time : {currentDays}", LogLevel.Info);
+                    building.daysOfConstructionLeft.Value = Math.Max(currentDays - 1, 0); // Prevent negative values
+                    Monitor.Log($"Reduced construction days. Remaining days: {building.daysOfConstructionLeft.Value}");
+                    buildingBeingReduced = buildingName;
+                    Monitor.Log($"BuildingBeingReduced : {buildingBeingReduced} and next building {buildingName}", LogLevel.Info);
+                }
+                else
+                {
+                    Monitor.Log($"Construction time for this {buildingName} has already been reduced.", LogLevel.Info);
+                }
+
             }
             else
             {
-                Monitor.Log("Error: daysOfConstructionLeft is null.");
+                // Reset when no building is under construction
+                if (isThereBuildingBuilt() == false)
+                {
+                    Monitor.Log($"Construction of {buildingBeingReduced} is complete.");
+                    buildingBeingReduced = string.Empty;
+                }
+                else
+                {
+                    Monitor.Log("No buildings are under construction.");
+                }
             }
         }
+
+        // get if there's a building under construction
         private bool isThereBuildingBuilt()
         {
-            buildingBeingBuilt = GetBuildingType(Game1.GetBuildingUnderConstruction());
             if (Game1.getFarm().isThereABuildingUnderConstruction() == true)
             {
-                Monitor.Log($"Construction of {buildingBeingBuilt}.", LogLevel.Warn);
-                return false;
+                Monitor.Log($"Construction of {GetBuildingType(Game1.GetBuildingUnderConstruction())}.", LogLevel.Warn);
+                return true;
             }
             else
             {
                 Monitor.Log("No buildings are under construction.", LogLevel.Warn);
-                return true;
+                return false;
             }
 
         }
-        //public void CheckBuildingBuilt()
-        //{
-        //    var building = Game1.getFarm().buildings.FirstOrDefault(b => b.isUnderConstruction());
+        public static Dictionary<string, int> GetBuildingCounts()
+        {
+            // Get the current player's farm
+            var farm = Game1.getFarm();
 
-        //    if (building != null)
-        //    {
-        //        string currentlyBeingBuilt = GetBuildingType(building);
-        //        Monitor.Log($"Your building Type : {currentlyBeingBuilt}", LogLevel.Warn);
-        //        // Check if this building's construction time was already reduced
-        //        if (currentlyBeingBuilt == buildingBeingBuilt)
-        //        {
-        //            Monitor.Log("Construction time for this building has already been reduced.", LogLevel.Warn);
-        //        }
-        //        else
-        //        {
-        //            // Reduce the construction time
-        //            reduceBuildingBuiltTime(building);
-        //            buildingBeingBuilt = currentlyBeingBuilt;
-        //            Monitor.Log($"Reduced construction time for: {currentlyBeingBuilt}", LogLevel.Warn);
-        //        }
-        //    }
-        //}
+            // Initialize a dictionary to store building counts
+            Dictionary<string, int> buildingCounts = new Dictionary<string, int>();
+
+            // Loop through each building on the farm
+            foreach (Building building in farm.buildings)
+            {
+                string buildingType = building.buildingType.Value;
+
+                // Increment the count for this building type
+                if (buildingCounts.ContainsKey(buildingType))
+                {
+                    buildingCounts[buildingType]++;
+                }
+                else
+                {
+                    buildingCounts[buildingType] = 1;
+                }
+            }
+
+            return buildingCounts;
+        }
     }
-
 }

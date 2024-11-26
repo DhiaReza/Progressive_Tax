@@ -1,9 +1,9 @@
 ﻿{
     "spring": {
-        "mailID": "spring",
+        "mailID": "spring1",
         "subject": "Dear @^",
         "body": "Spring has ended, but taxes never take a break! During Spring, you contributed {gold}g during winter. Excellent work! As a token of our appreciation, here's a small gift to help you enjoy the Summer. ^^ -The IRS",
-        "ending": "The IRS",
+        "ending": "Sprint Tax",
         "rewards": {
             "items": [
                 {
@@ -15,10 +15,10 @@
         }
     },
     "summer": {
-        "mailID": "summer",
-        "subject": "Hey, @,^",
+        "mailID": "summer1",
+        "subject": "Mr/Ms. @,^",
         "body": "Summer is behind us, but your contributions keep us moving forward! You paid {gold}g in Summer—thank you for your commitment. Please accept this little gift as our way of saying thanks. ^^ -Your 'Friend'",
-        "ending": "Your 'Friend'",
+        "ending": "Summer Tax",
         "rewards": {
             "items": [
                 {
@@ -30,10 +30,10 @@
         }
     },
     "fall": {
-        "mailID": "fall",
+        "mailID": "fall1",
         "subject": "@,^",
         "body": "Fall is over, and the seasons turn—but taxes will keep rising. You've contributed {gold}g this Fall. Well done! Here's a gift to help you through the Winter.. ^^ -IT",
-        "ending": "'IT'",
+        "ending": "Fall Tax",
         "rewards": {
             "items": [
                 {
@@ -43,20 +43,24 @@
                 {
                     "id": "774", //wild bait
                     "quantity": true
+                },
+                {
+                    "id": "382",
+                    "quantity" : true
                 }
             ], // Pumpkin seeds
             "money": false
         }
     },
     "winter": {
-        "mailID": "winter",
+        "mailID": "winter1",
         "subject": "Dear @^",
         "body": "Winter is over, and so is the year! You paid us {gold}g in total this year—thank you for your dedication. However, we discovered a small error in calculating your taxes. Taking responsibility for our mistake, we’ve issued you a refund, it will be delivered tomorrow. As an apology, we’ve also included a little something extra to help you start the new year on a bright note. ^^ -Tax Collector",
-        "ending": "Tax Collector",
+        "ending": "Tax Refund",
         "rewards": {
             "items": [
                 {
-                    "id": "745", // Strawberry Seed
+                    "id": "474", // Cauliflower Seed
                     "quantity": true
                 }
             ],
@@ -66,7 +70,7 @@
     "RefundMoney": {
         "mailID": "TaxRefund",
         "subject": "",
-        "body": "Remember yesterday's promise? Well we do. Anyway's here's your refund money. Take care.'. ^^ -Tax Collector",
+        "body": "^^ -Tax Collector",
         "ending": "Tax Collector",
         "rewards": {
             "money": true

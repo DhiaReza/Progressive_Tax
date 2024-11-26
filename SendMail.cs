@@ -21,6 +21,7 @@ namespace Progressive_Tax
         public int SeasonNow { get; set; }
         public int CurrentYear { get; set; }
         public int TaxPaidCurrentSeason { get; set; }
+        public int TaxPaidCLastSeason { get; set; }
         public int TaxPaidThisYear { get; set; }
         public int RefundRate { get; set; }
         public int PaidThisSave { get; set; }
@@ -30,7 +31,7 @@ namespace Progressive_Tax
         private Dictionary<string, MailEntry> seasonalMail;
 
         // Constructor to initialize the MailData object
-        public SendMail(IMonitor monitor, IModHelper helper, int season, int currentYear, int taxPaidCurrentSeason, int taxPaidThisYear, int taxPaidThisSave, int refundRate)
+        public SendMail(IMonitor monitor, IModHelper helper, int season, int currentYear, int taxPaidCurrentSeason,int taxPaidLastSeason, int taxPaidThisYear, int taxPaidThisSave, int refundRate)
         {
             Monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
             this.helper = helper ?? throw new ArgumentNullException(nameof(helper));
