@@ -19,14 +19,23 @@ namespace Progressive_Tax
     public class SendMail
     {
         private Progressive_Tax.TaxMod.ModConfig config;
+        
         private Progressive_Tax.TaxMod.TaxData taxInfo;
-        private Progressive_Tax.TaxMod gameInfo;
-        private TaxMod taxMod;
+        private TaxMod gameInfo;
         private IMonitor Monitor;
         private IModHelper helper;
-        private Dictionary<string, MailEntry> seasonalMail;
+        public Dictionary<string, MailEntry> SeasonalMail;
 
         // Constructor to initialize the MailData object
+
+        public SendMail(IMonitor monitor, IModHelper helper, TaxMod taxMod, TaxMod.TaxData taxInfo)
+        {
+            this.Monitor = monitor;
+            this.helper = helper;
+            this.config = taxMod.config;
+            this.taxInfo = taxMod.taxData;
+            this.gameInfo = taxMod;
+        }
 
         private Dictionary<int, string> seasonKey = new Dictionary<int, string>()
         {
@@ -56,35 +65,19 @@ namespace Progressive_Tax
             public string Id { get; set; }
             public bool Quantity { get; set; }
         }
-        private Dictionary<string, MailEntry> LoadMailData()
+        public Dictionary<string, MailEntry> LoadMailData()
         {
-            var mailPath = "assets/seasonal_mail.json";
+            string modPath = Path.Combine("assets", "seasonal_mail.json");
             // Load the mail data using the helper method
-            var mailData = helper.Data.ReadJsonFile<Dictionary<string, MailEntry>>(mailPath);
-
-            // If the file doesn't exist or isn't loaded correctly, return an empty dictionary
-            if (mailData == null)
-            {
-                Monitor.Log("Failed to load mail data.", LogLevel.Error);
-                return new Dictionary<string, MailEntry>();
-            }
-
+            var mailData = helper.Data.ReadJsonFile<Dictionary<string, MailEntry>>(modPath);
             return mailData;
         }
 
         public void SendSeasonalMail(int season) //send mail about yesterseason
         {
-            Monitor.Log($"Year : {gameInfo.currentYear}", LogLevel.Info);
-            Monitor.Log($"Love Lewis : {gameInfo.LoveLewis}", LogLevel.Info);
-            Monitor.Log($"Building Count : {gameInfo.AllBuildingCount}", LogLevel.Info);
-            Monitor.Log($"animal count : {gameInfo.animalCount}", LogLevel.Info);
-            Monitor.Log($"{taxInfo.TotalTaxPaidThisYear}", LogLevel.Info);
-            Monitor.Log($"{taxInfo.TotalTaxPaidCurrentSeason}", LogLevel.Info);
-            Monitor.Log($"{taxInfo.TotalTaxPaidThisYear}", LogLevel.Info);
-            Monitor.Log($"{config.refundRate}", LogLevel.Info);
-
+            SeasonalMail = LoadMailData();
             int nextSeason = season;
-            if (seasonalMail.TryGetValue(seasonKey[nextSeason], out var mailEntry))
+            if (SeasonalMail.TryGetValue(seasonKey[nextSeason], out var mailEntry))
             {
                 int localCurrentYear = gameInfo.currentYear; // safe guard if people play for more than 6 years
                 string mailContent = $"{mailEntry.Subject}\n\n{mailEntry.Body}";
@@ -144,11 +137,12 @@ namespace Progressive_Tax
         private int itemCount(int x)
         {
             int count = 9 + 18 * (x - 1); //9...18..27..45..63...99...
+            // 1000...2000...3000...4000...5000
             return count;
         }
         public void SendRegularMail(string mailID)
         {
-            if (seasonalMail.TryGetValue(mailID, out var mailEntry))
+            if (SeasonalMail.TryGetValue(mailID, out var mailEntry))
             {
                 string mailContent = $"{mailEntry.Subject}\n\n{mailEntry.Body}";
 
@@ -165,7 +159,7 @@ namespace Progressive_Tax
                     mailContent += $"^%item money {refundMoney} %% ";
                 }
 
-                mailContent += $"[#]{mailEntry.Ending}";
+                mailContent += $"[#]{mailEntry.Ending} {gameInfo.currentYear}";
 
                 Game1.content.Load<Dictionary<string, string>>("Data\\Mail")[mailEntry.MailID] = mailContent;
                 Game1.addMailForTomorrow(mailEntry.MailID);

@@ -25,10 +25,10 @@ namespace Progressive_Tax
         public int LoveLewis => Game1.player.getFriendshipHeartLevelForNPC("Lewis");
         public int AllBuildingCount => Game1.getFarm().buildings.Count;
         public int animalCount => Game1.getFarm().getAllFarmAnimals().Count();
-        private IList<Item> shippingBin => Game1.getFarm().getShippingBin(Game1.player);
+        public IList<Item> shippingBin => Game1.getFarm().getShippingBin(Game1.player);
         public int currentYear => Game1.year;
 
-        public SendMail mailing;
+        public SendMail sendMail;
 
         public float _CurrentTaxRate;
 
@@ -38,7 +38,11 @@ namespace Progressive_Tax
 
         public string buildingBeingReduced;
 
-        public static Dictionary<string, int> BuildingCountperType;
+        public int taxTier => DetermineTaxTier(currentYear);
+
+        public Dictionary<string, int> BuildingCountperType;
+
+        public Dictionary<string, int> BuildingNameAndPrice;
         //public string _mailPath;
         public float CurrentTaxRate
         {
@@ -63,10 +67,13 @@ namespace Progressive_Tax
             public float LewisLoveRate { get; set; } = 0.005f; // Default 0.005%
             
             public int refundRate { get; set; } = 15;
+            public int lowTier { get; set; } = 1000;
+            public int mediumTier { get; set; } = 5000;
+            public int highTier { get; set; } = 10000;
             public bool TaxGather { get; set; } = true; // handles when the tax should be collected
             // if true, every day, every shipped items
             // if false, every end season
-            // warning Dont Change!
+            // warning Dont Change! haven't implement anything to this.
             public void ResetToDefaults()
             {
                 BuildingTaxValue = 0.01f;
@@ -74,6 +81,9 @@ namespace Progressive_Tax
                 MaxYearlyTax = 0.2f;
                 YearlyTaxValue = 0.01f;
                 LewisLoveRate = 0.005f;
+                lowTier = 1000;
+                mediumTier = 5000;
+                highTier = 10000;
                 refundRate = 15;
                 TaxGather = true;
             }
@@ -94,13 +104,26 @@ namespace Progressive_Tax
             public int TotalTaxPaidLastSeason { get; set; } = 0;
             public int TotalTaxPaidThisYear { get; set; } = 0;
             public int TotalBuildingTax { get; set; } = 0;
+            public void EnsureDefaults()
+            {
+                var properties = GetType().GetProperties();
+                foreach (var property in properties)
+                {
+                    var propertyType = property.PropertyType;
+                    var defaultValue = propertyType.IsValueType ? Activator.CreateInstance(propertyType) : null;
+
+                    if (property.GetValue(this) == null)
+                    {
+                        property.SetValue(this, defaultValue);
+                    }
+                }
+            }
         }
 
         public override void Entry(IModHelper helper)
         {
             // Load configuration from the JSON file
             config = helper.ReadConfig<ModConfig>();
-
             // Hook into the in-game state
             helper.Events.GameLoop.DayEnding += this.OnDayEnding;
 
@@ -142,12 +165,12 @@ namespace Progressive_Tax
             if (today == 28)
             {
                 //int CurrentSeason, int currentYear, int currentSeasonTaxData, int ThisYearTaxData, int refundRate
-                mailing.SendSeasonalMail(thisSeason);
+                sendMail.SendSeasonalMail(thisSeason);
                 taxData.TotalTaxPaidLastSeason = taxData.TotalTaxPaidCurrentSeason;
                 taxData.TotalTaxPaidCurrentSeason = 0;
                 if (thisSeason == 3)
                 {
-                    mailing.SendRegularMail("TaxRefund");
+                    sendMail.SendRegularMail("TaxRefund");
                     taxData.TotalTaxPaidThisYear = 0;
                 }
             }
@@ -155,18 +178,18 @@ namespace Progressive_Tax
 
         private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
         {
-            if (taxData == null)
-            {
-                Monitor.Log("Something is NULL", LogLevel.Warn);
-                taxData = Helper.Data.ReadSaveData<TaxData>("TaxData") ?? new TaxData();
-            }
-            EnsureDefaults();
-            NotifyNewInstallation();
+            taxData = Helper.Data.ReadSaveData<TaxData>("TaxData") ?? new TaxData();
+            taxData.EnsureDefaults();
+            sendMail = new SendMail(Monitor, Helper, this, taxData);
+            sendMail.SeasonalMail = sendMail.LoadMailData();
+            Monitor.Log($"{config.refundRate}");
+            Monitor.Log($"{currentYear}");
             BuildingCountperType = GetBuildingCounts();
             foreach (var entry in BuildingCountperType)
             {
-                Monitor.Log($"{entry.Key}: {entry.Value}", LogLevel.Info);
+                Monitor.Log($"Name : {entry.Key}, Number : {entry.Value}", LogLevel.Info);
             }
+            Monitor.Log($"{taxTier}");
         }
 
         private void OnDayStarded(object sender, DayStartedEventArgs e)
@@ -342,41 +365,6 @@ namespace Progressive_Tax
             return (tillableCount, untillableCount, totalArea);
         }
 
-        private void NotifyNewInstallation()
-        {
-            if (taxData.TotalTaxPaidThisSave == null )
-            {
-
-                taxData.TotalTaxPaidThisSave = 0;
-
-            } if (taxData.TotalTaxPaidThisYear == null)
-            {
-
-                taxData.TotalTaxPaidThisYear = 0;
-
-            } if (taxData.TotalTaxPaidLastSeason == null)
-            {
-
-                taxData.TotalTaxPaidLastSeason = 0;
-
-            }if (taxData.TotalBuildingTax == null)
-            {
-
-                taxData.TotalBuildingTax = 0;
-
-            } if (taxData.TotalTaxPaidCurrentSeason == null)
-            {
-                taxData.TotalTaxPaidCurrentSeason = 0;
-            }
-            else 
-            {
-                Monitor.Log("Previous save detected, using it now", LogLevel.Info);
-                Monitor.Log($"Total tax paid {taxData.TotalTaxPaidThisSave}g", LogLevel.Info);
-                Monitor.Log($"Total tax paid this season {taxData.TotalTaxPaidCurrentSeason}g", LogLevel.Info);
-                Monitor.Log($"Total tax paid this year : {taxData.TotalTaxPaidThisYear}", LogLevel .Info);
-            }
-        }
-
         // get current day
         public int getDay()
         {
@@ -505,20 +493,12 @@ namespace Progressive_Tax
 
             return buildingCounts;
         }
-
-        public void EnsureDefaults()
+        private int DetermineTaxTier(int year)
         {
-            var properties = GetType().GetProperties();
-            foreach (var property in properties)
-            {
-                var propertyType = property.PropertyType;
-                var defaultValue = propertyType.IsValueType ? Activator.CreateInstance(propertyType) : null;
-
-                if (property.GetValue(this) == null)
-                {
-                    property.SetValue(this, defaultValue);
-                }
-            }
+            if (taxData.TotalTaxPaidLastSeason >= config.lowTier) return 1;
+            else if (taxData.TotalTaxPaidLastSeason >= config.mediumTier) return 2;
+            else if (taxData.TotalTaxPaidLastSeason >= config.highTier) return 3;
+            else return 0;
         }
     }
 }
