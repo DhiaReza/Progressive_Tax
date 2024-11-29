@@ -44,7 +44,7 @@ namespace Progressive_Tax
                 () => config.MaxYearlyTax, value => config.MaxYearlyTax = value, 0f, 0.2f, 0.005f);
             AddFloatOption(configMenu, "Lewis Heart Tax Reduction", "Adjust tax reduction based on lewis heart.\n(Default: 0.5%)",
     () => config.LewisLoveRate, value => config.LewisLoveRate = value, 0f, 0.2f, 0.005f);
-            AddNumberOption(configMenu, "Tax Refund Rate", "Adjust the winter tax refund rate.\n(Default: 10%)", () => config.refundRate, value => config.refundRate = value, 0, 20, 1);
+            AddFloatOption(configMenu, "Tax Refund Rate", "Adjust the winter tax refund rate.\n(Default: 10%)", () => config.refundRate, value => config.refundRate = value, 0, 20, 1);
 
             AddNumberOption(configMenu, "Low Tier Threshold", "Income threshold for low tax tier reward.", () => config.lowTier, value => config.lowTier = value, 0,
                 100000, 100 );
