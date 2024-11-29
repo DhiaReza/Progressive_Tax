@@ -66,7 +66,7 @@ namespace Progressive_Tax
             // Lewis Friendship to Tax conversion rate (1 int = 0.5%) max 5%
             public float LewisLoveRate { get; set; } = 0.005f; // Default 0.005%
             
-            public int refundRate { get; set; } = 15;
+            public float refundRate { get; set; } = 0.15f;
             public int lowTier { get; set; } = 1000;
             public int mediumTier { get; set; } = 5000;
             public int highTier { get; set; } = 10000;
@@ -84,7 +84,7 @@ namespace Progressive_Tax
                 lowTier = 1000;
                 mediumTier = 5000;
                 highTier = 10000;
-                refundRate = 15;
+                refundRate = 0.15f;
                 TaxGather = true;
             }
         }

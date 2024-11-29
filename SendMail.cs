@@ -103,7 +103,7 @@ namespace Progressive_Tax
                     }
                 if (mailEntry.Rewards.Money == true)
                 {
-                    int refundMoney = taxInfo.TotalTaxPaidThisYear * (config.refundRate*100);
+                    float refundMoney = taxInfo.TotalTaxPaidThisYear * config.refundRate;
                     mailContent += $"^%item money {refundMoney} %% ";
                 }
                 Game1.IsThereABuildingUnderConstruction();
@@ -159,7 +159,7 @@ namespace Progressive_Tax
                 }
                 if (mailEntry.Rewards.Money)
                 {
-                    int refundMoney = taxInfo.TotalTaxPaidThisYear * config.refundRate / 100;
+                    float refundMoney = taxInfo.TotalTaxPaidThisYear * config.refundRate;
                     mailContent += $"^%item money {refundMoney} %% ";
                 }
 

@@ -31,25 +31,31 @@ namespace Progressive_Tax
             );
 
             // Add options for configuration
-            AddNumberOption(configMenu, "Building Tax Rate", "Adjust the tax rate applied per building.\n(Default: 0.1%)",
+            AddFloatOption(configMenu, "Building Tax Rate", "Adjust the tax rate applied per building.\n(Default: 0.1%)",
                 () => config.BuildingTaxValue, value => config.BuildingTaxValue = value, 0f, 0.1f, 0.005f);
 
-            AddNumberOption(configMenu, "Animal Tax Rate", "Adjust the tax rate applied per animal.\n(Default: 0.5%)",
+            AddFloatOption(configMenu, "Animal Tax Rate", "Adjust the tax rate applied per animal.\n(Default: 0.5%)",
                 () => config.AnimalTaxValue, value => config.AnimalTaxValue = value, 0f, 0.1f, 0.005f);
 
-            AddNumberOption(configMenu, "Yearly Tax Rate", "Adjust the tax rate applied per year.\n(Default: 1%)",
+            AddFloatOption(configMenu, "Yearly Tax Rate", "Adjust the tax rate applied per year.\n(Default: 1%)",
                 () => config.YearlyTaxValue, value => config.YearlyTaxValue = value, 0f, 0.1f, 0.005f);
 
-            AddNumberOption(configMenu, "Max Yearly Tax Rate", "Adjust the maximum yearly tax rate.\n(Default: 10%)",
+            AddFloatOption(configMenu, "Max Yearly Tax Rate", "Adjust the maximum yearly tax rate.\n(Default: 10%)",
                 () => config.MaxYearlyTax, value => config.MaxYearlyTax = value, 0f, 0.2f, 0.005f);
-            AddNumberOption(configMenu, "Lewis Heart Tax Reduction", "Adjust tax reduction based on lewis heart.\n(Default: 0.5%)",
+            AddFloatOption(configMenu, "Lewis Heart Tax Reduction", "Adjust tax reduction based on lewis heart.\n(Default: 0.5%)",
     () => config.LewisLoveRate, value => config.LewisLoveRate = value, 0f, 0.2f, 0.005f);
-            //AddBoolOption(configMenu, () => config.TaxGather, value => config.TaxGather = value, "Tax Collect Time", "Checked : At every shippning\nNot Checked : At the end of season");
-            // too hard bruh
             AddNumberOption(configMenu, "Tax Refund Rate", "Adjust the winter tax refund rate.\n(Default: 10%)", () => config.refundRate, value => config.refundRate = value, 0, 20, 1);
+
+            AddNumberOption(configMenu, "Low Tier Threshold", "Income threshold for low tax tier reward.", () => config.lowTier, value => config.lowTier = value, 0,
+                100000, 100 );
+
+            AddNumberOption(configMenu,"Medium Tier Threshold", "Income threshold for medium tax tier reward.",
+                () => config.mediumTier, value => config.mediumTier = value, 0, 100000, 100 );
+
+            AddNumberOption(configMenu, "High Tier Threshold", "Income threshold for high tax tier.", () => config.highTier, value => config.highTier = value, 0, 100000, 100);
         }
 
-        private void AddNumberOption(IGenericModConfigMenuApi configMenu, string name, string tooltip,
+        private void AddFloatOption(IGenericModConfigMenuApi configMenu, string name, string tooltip,
             Func<float> getValue, Action<float> setValue, float min, float max, float interval)
         {
             configMenu.SetTitleScreenOnlyForNextOptions(manifest, true);
@@ -78,7 +84,7 @@ namespace Progressive_Tax
                 min: min,
                 max: max,
                 interval: interval,
-                formatValue: value => $"{value}%"
+                formatValue: value => $"{value}"
             );
         }
         private void AddBoolOption(IGenericModConfigMenuApi configMenu, Func<bool> getValue, Action<bool> setValue, string name, string tooltip = null, string fieldId = null)

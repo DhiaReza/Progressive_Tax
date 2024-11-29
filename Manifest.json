@@ -1,7 +1,7 @@
 {
     "Name": "Progressive Tax",
     "Author": "SatriaCahaya",
-    "Version": "1.0.3",
+    "Version": "1.0.4",
     "Description": "A mod to reduce items price sold through a shipping bin according to player's wealth",
     "UniqueID": "SatriaCahaya.ProgressiveTax",
     "EntryDll": "Progressive_Tax.dll",
