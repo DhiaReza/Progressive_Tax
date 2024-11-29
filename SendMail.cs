@@ -112,15 +112,19 @@ namespace Progressive_Tax
                 {
                     case "spring":
                         mailContent = mailContent.Replace("{gold}", taxInfo.TotalTaxPaidCurrentSeason.ToString());
+                        Monitor.Log($"Sending rewards for {seasonKey[nextSeason]}");
                         break;
                     case "summer":
                         mailContent = mailContent.Replace("{gold}", taxInfo.TotalTaxPaidCurrentSeason.ToString());
+                        Monitor.Log($"Sending rewards for {seasonKey[nextSeason]}");
                         break;
                     case "fall":
                         mailContent = mailContent.Replace("{gold}", taxInfo.TotalTaxPaidCurrentSeason.ToString());
+                        Monitor.Log($"Sending rewards for {seasonKey[nextSeason]}");
                         break;
                     case "winter":
                         mailContent = mailContent.Replace("{gold}", taxInfo.TotalTaxPaidThisYear.ToString());
+                        Monitor.Log($"Sending rewards for {seasonKey[nextSeason]}");
                         break;
                 }
                 // Add the mail to the game

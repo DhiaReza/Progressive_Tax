@@ -80,11 +80,17 @@
         }
     },
     "RefundMoney": {
-        "mailID": "TaxRefund",
+        "mailID": "RefundMoney",
         "subject": "",
         "body": "^^ -Tax Collector",
-        "ending": "Tax Collector",
+        "ending": "Tax Refund",
         "rewards": {
+            "items": [
+                {
+                    "id": "382", // coal
+                    "quantity": true
+                }
+            ],
             "money": true
         }
     }

@@ -136,7 +136,7 @@ namespace Progressive_Tax
             helper.Events.GameLoop.DayStarted += this.OnDayStarded;
 
         }
-
+       
         private void GameLaunched(object sender, GameLaunchedEventArgs e)
         {
             // load gmcm
@@ -146,11 +146,6 @@ namespace Progressive_Tax
 
         private void OnDayEnding(object? sender, DayEndingEventArgs e)
         {
-            if (isThereBuildingBuilt() == true) 
-            {
-                reduceBuildingBuiltTime();
-            }
-
             // Check if the shipping bin contains items
             if (shippingBin.Count > 0)
             {
@@ -160,19 +155,24 @@ namespace Progressive_Tax
             {
                 Monitor.Log("You have no items in the shipping bin", LogLevel.Info);
             }
-            int today = getDay();
-            int thisSeason = getSeason();
-            if (today == 28)
+            
+            int tier = DetermineTaxTier(currentYear);
+            Monitor.Log($"Your Tax Tier : {tier}");
+            switch (tier)
             {
-                //int CurrentSeason, int currentYear, int currentSeasonTaxData, int ThisYearTaxData, int refundRate
-                sendMail.SendSeasonalMail(thisSeason);
-                taxData.TotalTaxPaidLastSeason = taxData.TotalTaxPaidCurrentSeason;
-                taxData.TotalTaxPaidCurrentSeason = 0;
-                if (thisSeason == 3)
-                {
-                    sendMail.SendRegularMail("TaxRefund");
-                    taxData.TotalTaxPaidThisYear = 0;
-                }
+                case 1:
+                    TierOneRewards();
+                    break;
+                case <3: //love uwu
+                    TierOneRewards();
+                    TierTwoRewards();
+                    break;
+                case 3:
+                    // to be implemented
+                    break;
+                default:
+                    // to be implemented
+                    break;
             }
         }
 
@@ -182,14 +182,7 @@ namespace Progressive_Tax
             taxData.EnsureDefaults();
             sendMail = new SendMail(Monitor, Helper, this, taxData);
             sendMail.SeasonalMail = sendMail.LoadMailData();
-            Monitor.Log($"{config.refundRate}");
-            Monitor.Log($"{currentYear}");
             BuildingCountperType = GetBuildingCounts();
-            foreach (var entry in BuildingCountperType)
-            {
-                Monitor.Log($"Name : {entry.Key}, Number : {entry.Value}", LogLevel.Info);
-            }
-            Monitor.Log($"{taxTier}");
         }
 
         private void OnDayStarded(object sender, DayStartedEventArgs e)
@@ -207,6 +200,30 @@ namespace Progressive_Tax
             return 0;
         }
 
+        private void TierOneRewards()
+        {
+            int thisSeason = getSeason();
+            int today = getDay();
+            if (today == 28)
+            {
+                //int CurrentSeason, int currentYear, int currentSeasonTaxData, int ThisYearTaxData, int refundRate
+                sendMail.SendSeasonalMail(thisSeason);
+                taxData.TotalTaxPaidLastSeason = taxData.TotalTaxPaidCurrentSeason;
+                taxData.TotalTaxPaidCurrentSeason = 0;
+                if (thisSeason == 3)
+                {
+                    sendMail.SendRegularMail("RefundMoney");
+                    taxData.TotalTaxPaidThisYear = 0;
+                }
+            }
+        }
+        private void TierTwoRewards()
+        {
+            if (isThereBuildingBuilt() == true)
+            {
+                reduceBuildingBuiltTime();
+            }
+        }
         private int ApplyTaxToShippingBin(System.Collections.Generic.IList<Item> shippingBin, bool immediateMode, float LewisRate)
         {
             // Calculate tax rate
@@ -495,7 +512,7 @@ namespace Progressive_Tax
         }
         private int DetermineTaxTier(int year)
         {
-            if (taxData.TotalTaxPaidLastSeason >= config.lowTier) return 1;
+            if (taxData.TotalTaxPaidLastSeason >= config.lowTier * year) return 1;
             else if (taxData.TotalTaxPaidLastSeason >= config.mediumTier) return 2;
             else if (taxData.TotalTaxPaidLastSeason >= config.highTier) return 3;
             else return 0;
