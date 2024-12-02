@@ -15,7 +15,8 @@ using StardewValley.Buildings;
 using System.Reflection;
 using StardewValley.GameData.Buildings;
 using System.Globalization;
-
+using StardewValley.SpecialOrders.Rewards;
+using static Progressive_Tax.SendMail;
 namespace Progressive_Tax
 {
     public class TaxMod : Mod
@@ -142,6 +143,8 @@ namespace Progressive_Tax
             // load gmcm
             var configMenuHandler = new ConfigMenuHandler(config, Helper, ModManifest);
             configMenuHandler.RegisterMenu();
+            sendMail = new SendMail(Monitor, Helper);
+            sendMail.SeasonalMail = LoadMailData();
         }
 
         private void OnDayEnding(object? sender, DayEndingEventArgs e)
@@ -157,32 +160,51 @@ namespace Progressive_Tax
             }
             
             int tier = DetermineTaxTier(currentYear);
-            Monitor.Log($"Your Tax Tier : {tier}");
+            Monitor.Log($"Your Tax Tier : {tier}", LogLevel.Info);
             switch (tier)
             {
                 case 1:
                     TierOneRewards();
                     break;
-                case <3: //love uwu
+                case 2: //love uwu
                     TierOneRewards();
                     TierTwoRewards();
                     break;
                 case 3:
+                    TierOneRewards();
+                    TierTwoRewards();
                     // to be implemented
                     break;
-                default:
-                    // to be implemented
+                case 0:
+                    Monitor.Log($"Not Enough Tax");
                     break;
             }
+            Monitor.Log($"Total tax paid this season {taxData.TotalTaxPaidCurrentSeason}g", LogLevel.Info);
         }
 
         private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
         {
             taxData = Helper.Data.ReadSaveData<TaxData>("TaxData") ?? new TaxData();
             taxData.EnsureDefaults();
-            sendMail = new SendMail(Monitor, Helper, this, taxData);
-            sendMail.SeasonalMail = sendMail.LoadMailData();
+            if(taxData.TotalTaxPaidThisSave != 0)
+            {
+                Monitor.Log("Previous save detected, using it now", LogLevel.Info);
+                Monitor.Log($"Total tax paid : {taxData.TotalTaxPaidThisSave}g", LogLevel.Info);
+                Monitor.Log($"Total tax paid this season {taxData.TotalTaxPaidCurrentSeason}g", LogLevel.Info);
+                Monitor.Log($"Total tax paid this year : {taxData.TotalTaxPaidThisYear}", LogLevel.Info);
+                Monitor.Log($"Total tax paid previous sesaon : {taxData.TotalTaxPaidLastSeason}", LogLevel.Info);
+            }
+            else
+            {
+                Monitor.Log("No save detected, starting from the beginning", LogLevel.Info);
+                Monitor.Log($"Total tax paid : {taxData.TotalTaxPaidThisSave}g", LogLevel.Info);
+                Monitor.Log($"Total tax paid this season {taxData.TotalTaxPaidCurrentSeason}g", LogLevel.Info);
+                Monitor.Log($"Total tax paid this year : {taxData.TotalTaxPaidThisYear}", LogLevel.Info);
+                Monitor.Log($"Total tax paid previous sesaon : {taxData.TotalTaxPaidLastSeason}", LogLevel.Info);
+            }
+            //sendMail.SeasonalMail = LoadMailData();
             BuildingCountperType = GetBuildingCounts();
+            sendMail.Initialize(this, taxData);
         }
 
         private void OnDayStarded(object sender, DayStartedEventArgs e)
@@ -202,16 +224,24 @@ namespace Progressive_Tax
 
         private void TierOneRewards()
         {
+            Monitor.Log($"Total tax paid : {taxData.TotalTaxPaidThisSave}g", LogLevel.Info);
+            Monitor.Log($"Total tax paid this year : {taxData.TotalTaxPaidThisYear}", LogLevel.Info);
+            Monitor.Log($"Total tax paid previous sesaon : {taxData.TotalTaxPaidLastSeason}", LogLevel.Info);
             int thisSeason = getSeason();
             int today = getDay();
             if (today == 28)
             {
                 //int CurrentSeason, int currentYear, int currentSeasonTaxData, int ThisYearTaxData, int refundRate
                 sendMail.SendSeasonalMail(thisSeason);
+
                 taxData.TotalTaxPaidLastSeason = taxData.TotalTaxPaidCurrentSeason;
+                Monitor.Log($"Changing season, sending rewards and reset tax record", LogLevel.Info);
+                Monitor.Log($"Last season tax : {taxData.TotalTaxPaidLastSeason}", LogLevel.Info);
                 taxData.TotalTaxPaidCurrentSeason = 0;
                 if (thisSeason == 3)
                 {
+                    Monitor.Log($"New year, new tax record. Reseting last year tax record and sending refund money.", LogLevel.Info);
+                    Monitor.Log($"Last year tax : {taxData.TotalTaxPaidThisYear}", LogLevel.Info);
                     sendMail.SendRegularMail("RefundMoney");
                     taxData.TotalTaxPaidThisYear = 0;
                 }
@@ -512,10 +542,18 @@ namespace Progressive_Tax
         }
         private int DetermineTaxTier(int year)
         {
-            if (taxData.TotalTaxPaidLastSeason >= config.lowTier * year) return 1;
-            else if (taxData.TotalTaxPaidLastSeason >= config.mediumTier) return 2;
-            else if (taxData.TotalTaxPaidLastSeason >= config.highTier) return 3;
+            if (taxData.TotalTaxPaidCurrentSeason >= config.lowTier * year) return 1;
+            else if (taxData.TotalTaxPaidCurrentSeason >= config.mediumTier) return 2;
+            else if (taxData.TotalTaxPaidCurrentSeason >= config.highTier) return 3;
             else return 0;
+        }
+
+        public Dictionary<string, MailEntry> LoadMailData()
+        {
+            string modPath = Path.Combine("assets", "seasonal_mail.json");
+            // Load the mail data using the helper method
+            var mailData = Helper.Data.ReadJsonFile<Dictionary<string, MailEntry>>(modPath);
+            return mailData;
         }
     }
 }

@@ -28,14 +28,14 @@ namespace Progressive_Tax
 
         // Constructor to initialize the MailData object
 
-        public SendMail(IMonitor monitor, IModHelper helper, TaxMod taxMod, TaxMod.TaxData taxInfo)
+/*        public SendMail(IMonitor monitor, IModHelper helper, TaxMod taxMod, TaxMod.TaxData taxInfo)
         {
             this.Monitor = monitor;
             this.helper = helper;
             this.config = taxMod.config;
             this.taxInfo = taxMod.taxData;
             this.gameInfo = taxMod;
-        }
+        }*/
 
         private Dictionary<int, string> seasonKey = new Dictionary<int, string>()
         {
@@ -65,17 +65,30 @@ namespace Progressive_Tax
             public string Id { get; set; }
             public bool Quantity { get; set; }
         }
-        public Dictionary<string, MailEntry> LoadMailData()
+        //public Dictionary<string, MailEntry> LoadMailData()
+        //{
+        //    string modPath = Path.Combine("assets", "seasonal_mail.json");
+        //    // Load the mail data using the helper method
+        //    var mailData = helper.Data.ReadJsonFile<Dictionary<string, MailEntry>>(modPath);
+        //    return mailData;
+        //}
+
+        public SendMail(IMonitor monitor, IModHelper helper)
         {
-            string modPath = Path.Combine("assets", "seasonal_mail.json");
-            // Load the mail data using the helper method
-            var mailData = helper.Data.ReadJsonFile<Dictionary<string, MailEntry>>(modPath);
-            return mailData;
+            this.Monitor = monitor;
+            this.helper = helper;
+        }
+
+        public void Initialize(TaxMod taxMod, TaxMod.TaxData taxInfo)
+        {
+            this.config = taxMod.config;
+            this.taxInfo = taxInfo;
+            this.gameInfo = taxMod;
+            Monitor.Log("SendMail initialized with player-specific data.", LogLevel.Info);
         }
 
         public void SendSeasonalMail(int season) //send mail about yesterseason
         {
-            SeasonalMail = LoadMailData();
             int nextSeason = season;
             if (SeasonalMail.TryGetValue(seasonKey[nextSeason], out var mailEntry))
             {
@@ -112,26 +125,26 @@ namespace Progressive_Tax
                 {
                     case "spring":
                         mailContent = mailContent.Replace("{gold}", taxInfo.TotalTaxPaidCurrentSeason.ToString());
-                        Monitor.Log($"Sending rewards for {seasonKey[nextSeason]}");
+                        Monitor.Log($"Sending tax rewards for {seasonKey[nextSeason]}");
                         break;
                     case "summer":
                         mailContent = mailContent.Replace("{gold}", taxInfo.TotalTaxPaidCurrentSeason.ToString());
-                        Monitor.Log($"Sending rewards for {seasonKey[nextSeason]}");
+                        Monitor.Log($"Sending tax rewards for {seasonKey[nextSeason]}");
                         break;
                     case "fall":
                         mailContent = mailContent.Replace("{gold}", taxInfo.TotalTaxPaidCurrentSeason.ToString());
-                        Monitor.Log($"Sending rewards for {seasonKey[nextSeason]}");
+                        Monitor.Log($"Sending tax rewards for {seasonKey[nextSeason]}");
                         break;
                     case "winter":
                         mailContent = mailContent.Replace("{gold}", taxInfo.TotalTaxPaidThisYear.ToString());
-                        Monitor.Log($"Sending rewards for {seasonKey[nextSeason]}");
+                        Monitor.Log($"Sending tax rewards for {seasonKey[nextSeason]}");
                         break;
                 }
                 // Add the mail to the game
                 Game1.content.Load<Dictionary<string, string>>("Data\\Mail")[mailEntry.MailID] = mailContent;
                 Game1.mailbox.Add(mailEntry.MailID);
 
-                Monitor.Log($"Mail for {seasonKey[nextSeason]} sent: {mailContent}");
+                Monitor.Log($"Mail for {seasonKey[nextSeason]} been sent: {mailContent}");
             }
             else
             {
