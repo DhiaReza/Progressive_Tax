@@ -149,6 +149,7 @@ namespace Progressive_Tax
 
         private void OnDayEnding(object? sender, DayEndingEventArgs e)
         {
+            int tier = DetermineTaxTier(currentYear);
             // Check if the shipping bin contains items
             if (shippingBin.Count > 0)
             {
@@ -159,21 +160,20 @@ namespace Progressive_Tax
                 Monitor.Log("You have no items in the shipping bin", LogLevel.Info);
             }
             
-            int tier = DetermineTaxTier(currentYear);
             Monitor.Log($"Your Tax Tier : {tier}", LogLevel.Info);
             switch (tier)
             {
                 case 1:
                     TierOneRewards();
                     break;
-                case 2: //love uwu
+                case 2:
                     TierOneRewards();
                     TierTwoRewards();
                     break;
                 case 3:
                     TierOneRewards();
                     TierTwoRewards();
-                    // to be implemented
+                    // third benefit, to be implemented
                     break;
                 case 0:
                     Monitor.Log($"Not Enough Tax");
@@ -186,7 +186,8 @@ namespace Progressive_Tax
         {
             taxData = Helper.Data.ReadSaveData<TaxData>("TaxData") ?? new TaxData();
             taxData.EnsureDefaults();
-            if(taxData.TotalTaxPaidThisSave != 0)
+            int tier = DetermineTaxTier(currentYear);
+            if (taxData.TotalTaxPaidThisSave != 0)
             {
                 Monitor.Log("Previous save detected, using it now", LogLevel.Info);
                 Monitor.Log($"Total tax paid : {taxData.TotalTaxPaidThisSave}g", LogLevel.Info);
@@ -205,6 +206,7 @@ namespace Progressive_Tax
             //sendMail.SeasonalMail = LoadMailData();
             BuildingCountperType = GetBuildingCounts();
             sendMail.Initialize(this, taxData);
+            Monitor.Log($"Your Tax Tier : {tier}", LogLevel.Info);
         }
 
         private void OnDayStarded(object sender, DayStartedEventArgs e)
@@ -242,7 +244,7 @@ namespace Progressive_Tax
                 {
                     Monitor.Log($"New year, new tax record. Reseting last year tax record and sending refund money.", LogLevel.Info);
                     Monitor.Log($"Last year tax : {taxData.TotalTaxPaidThisYear}", LogLevel.Info);
-                    sendMail.SendRegularMail("RefundMoney");
+                    //sendMail.SendRegularMail("RefundMoney");
                     taxData.TotalTaxPaidThisYear = 0;
                 }
             }
@@ -542,8 +544,8 @@ namespace Progressive_Tax
         }
         private int DetermineTaxTier(int year)
         {
-            if (taxData.TotalTaxPaidCurrentSeason >= config.lowTier * year) return 1;
-            else if (taxData.TotalTaxPaidCurrentSeason >= config.mediumTier) return 2;
+            if (taxData.TotalTaxPaidCurrentSeason >= config.lowTier * year && taxData.TotalTaxPaidCurrentSeason < config.mediumTier) return 1;
+            else if (taxData.TotalTaxPaidCurrentSeason >= config.mediumTier && taxData.TotalTaxPaidCurrentSeason < config.highTier) return 2;
             else if (taxData.TotalTaxPaidCurrentSeason >= config.highTier) return 3;
             else return 0;
         }

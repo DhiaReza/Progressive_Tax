@@ -7,12 +7,12 @@ Each factor can be configured through MCM or stright to config.json (if you want
 
 Current goal :
 	Fix mail system when player's not saving in day 1
+	Implement High tier reward
 
 Done :
-	Implement mailing for future reward system. OK
+	Implement mailing for future reward system.
 	Refactor seasonal_mail.json structur. (change quantity field to bool). and change the code to allow individual and multiple items at single mail call
-	Reduce building built time
-	change given items on each mail to reflec player's tax money
+	change given items on each mail to reflect player's tax money
 	reduce building built time based on tax
 
 ignore :

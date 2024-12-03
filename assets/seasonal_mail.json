@@ -63,7 +63,7 @@
     "winter": {
         "mailID": "winter",
         "subject": "Dear @^",
-        "body": "Winter is over, and so is the year! You paid us {gold}g in total this year—thank you for your dedication. However, we discovered a small error in calculating your taxes. Taking responsibility for our mistake, we’ve issued you a refund, it will be delivered tomorrow. As an apology, we’ve also included a little something extra to help you start the new year on a bright note. ^^ -Tax Collector",
+        "body": "Winter is over, and so is the year! You paid us {gold}g in total this year—thank you for your dedication. However, we discovered a small error in calculating your taxes. Taking responsibility for our mistake, we’ve issued you a refund. As an apology, we’ve also included a little something extra to help you start the new year on a bright note. ^^ -Tax Collector",
         "ending": "Tax Refund",
         "rewards": {
             "items": [
@@ -76,7 +76,7 @@
                     "quantity" :  true
                 }
             ],
-            "money": false
+            "money": true
         }
     },
     "RefundMoney": {
